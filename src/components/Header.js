@@ -11,7 +11,7 @@ function loggedOutLinks() {
 function loggedInLinks() {
   return `
     <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
-    <li class="nav-item"><a class="nav-link" href="/dashboard.html">Create Trip</a></li>
+    <li class="nav-item"><a class="nav-link" href="/create-trip.html">Create Trip</a></li>
     <li class="nav-item"><a class="nav-link" href="/dashboard.html">Profile</a></li>
     <li class="nav-item"><a class="nav-link" href="/dashboard.html">Dashboard</a></li>
     <li class="nav-item">

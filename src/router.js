@@ -2,10 +2,15 @@ import { Header } from "./components/Header.js";
 import { setupHeaderEvents } from "./components/Header.js";
 import { Footer } from "./components/Footer.js";
 import { HomePage } from "./pages/home.js";
+import { setupHomePage } from "./pages/home.js";
 import { LoginPage } from "./pages/login.js";
 import { setupLoginPage } from "./pages/login.js";
 import { DashboardPage } from "./pages/dashboard.js";
 import { setupDashboardPage } from "./pages/dashboard.js";
+import { CreateTripPage } from "./pages/createTrip.js";
+import { setupCreateTripPage } from "./pages/createTrip.js";
+import { TripDetailsPage } from "./pages/tripDetails.js";
+import { setupTripDetailsPage } from "./pages/tripDetails.js";
 import { RegisterPage } from "./pages/register.js";
 import { setupRegisterPage } from "./pages/register.js";
 
@@ -29,6 +34,14 @@ function getRoute() {
     return "dashboard";
   }
 
+  if (pathname === "/create-trip" || pathname === "/create-trip.html") {
+    return "createTrip";
+  }
+
+  if (pathname === "/trip-details" || pathname === "/trip-details.html") {
+    return "tripDetails";
+  }
+
   return "home";
 }
 
@@ -38,6 +51,10 @@ function getPageMarkup(route) {
       return LoginPage();
     case "dashboard":
       return DashboardPage();
+    case "createTrip":
+      return CreateTripPage();
+    case "tripDetails":
+      return TripDetailsPage();
     case "register":
       return RegisterPage();
     case "home":
@@ -56,6 +73,15 @@ function setupPage(route) {
       break;
     case "dashboard":
       setupDashboardPage();
+      break;
+    case "createTrip":
+      setupCreateTripPage();
+      break;
+    case "tripDetails":
+      setupTripDetailsPage();
+      break;
+    case "home":
+      setupHomePage();
       break;
     default:
       break;
