@@ -1,5 +1,7 @@
 import { getCurrentUser } from "../services/authService.js";
-import { adminDeleteTrip, getAllProfiles, getAllTrips } from "../services/tripService.js";
+import { adminDeleteTrip, adminUpdateTrip, getAllProfiles, getAllTrips } from "../services/tripService.js";
+
+const tripById = new Map();
 
 function formatDateTime(value) {
   const date = new Date(value);
@@ -12,6 +14,19 @@ function formatDateTime(value) {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(date);
+}
+
+function toDatetimeLocalValue(value) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  const pad = (number) => String(number).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(
+    date.getMinutes()
+  )}`;
 }
 
 function escapeHtml(value) {
@@ -133,10 +148,16 @@ function renderTripsTable(trips) {
     return;
   }
 
+  tripById.clear();
+
   if (!trips.length) {
-    host.innerHTML = '<div class="alert alert-light mb-0">No active trips found.</div>';
+    host.innerHTML = '<div class="alert alert-light mb-0">No trips found.</div>';
     return;
   }
+
+  trips.forEach((trip) => {
+    tripById.set(trip.id, trip);
+  });
 
   const rows = trips
     .map(
@@ -148,6 +169,10 @@ function renderTripsTable(trips) {
           <td>${trip.available_seats}</td>
           <td>${escapeHtml(trip.driver?.full_name || "Unknown")}</td>
           <td>
+            <button class="btn btn-sm btn-outline-primary me-2" type="button" data-edit-trip-id="${trip.id}">
+              <i class="bi bi-pencil-square"></i>
+              Edit
+            </button>
             <button class="btn btn-sm btn-danger" type="button" data-delete-trip-id="${trip.id}">
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
                 <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0A.5.5 0 0 1 8.5 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/>
@@ -192,9 +217,94 @@ async function loadAdminData() {
     tripsHost.innerHTML = '<div class="text-muted">Loading trips...</div>';
   }
 
-  const [profiles, trips] = await Promise.all([getAllProfiles(), getAllTrips()]);
+  const [profiles, trips] = await Promise.all([getAllProfiles(), getAllTrips({}, { includeAll: true })]);
   renderUsersTable(profiles);
   renderTripsTable(trips);
+}
+
+function openTripEditModal(tripId) {
+  const trip = tripById.get(tripId);
+  const modalElement = document.getElementById("editTripModal");
+  const fromCityInput = document.getElementById("editFromCity");
+  const toCityInput = document.getElementById("editToCity");
+  const dateTimeInput = document.getElementById("editDateTime");
+  const priceInput = document.getElementById("editPrice");
+  const seatsInput = document.getElementById("editSeats");
+  const tripIdInput = document.getElementById("editTripId");
+
+  if (!trip || !modalElement || !fromCityInput || !toCityInput || !dateTimeInput || !priceInput || !seatsInput || !tripIdInput) {
+    return;
+  }
+
+  fromCityInput.value = trip.from_city;
+  toCityInput.value = trip.to_city;
+  dateTimeInput.value = toDatetimeLocalValue(trip.date_time);
+  priceInput.value = String(trip.price);
+  seatsInput.value = String(trip.available_seats);
+  tripIdInput.value = trip.id;
+
+  const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+  modal.show();
+}
+
+function bindEditTripForm() {
+  const form = document.getElementById("editTripForm");
+
+  if (!form) {
+    return;
+  }
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const formData = new FormData(form);
+    const tripId = String(formData.get("trip_id") || "");
+    const dateTimeValue = String(formData.get("date_time") || "");
+
+    if (!tripId || !dateTimeValue) {
+      showToast("Missing trip data for update.", "danger");
+      return;
+    }
+
+    const parsedDate = new Date(dateTimeValue);
+
+    if (Number.isNaN(parsedDate.getTime())) {
+      showToast("Invalid date and time.", "danger");
+      return;
+    }
+
+    const saveButton = document.getElementById("saveTripChangesButton");
+
+    if (saveButton instanceof HTMLButtonElement) {
+      saveButton.disabled = true;
+    }
+
+    try {
+      await adminUpdateTrip(tripId, {
+        from_city: String(formData.get("from_city") || "").trim(),
+        to_city: String(formData.get("to_city") || "").trim(),
+        date_time: parsedDate.toISOString(),
+        price: String(formData.get("price") || "0"),
+        available_seats: String(formData.get("available_seats") || "0"),
+      });
+
+      const modalElement = document.getElementById("editTripModal");
+
+      if (modalElement) {
+        const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+        modal.hide();
+      }
+
+      await loadAdminData();
+      showToast("Trip updated successfully.", "success");
+    } catch (error) {
+      showToast(error.message || "Failed to update trip.", "danger");
+    } finally {
+      if (saveButton instanceof HTMLButtonElement) {
+        saveButton.disabled = false;
+      }
+    }
+  });
 }
 
 function bindAdminEvents() {
@@ -211,13 +321,25 @@ function bindAdminEvents() {
       return;
     }
 
-    const button = target.closest("[data-delete-trip-id]");
+    const editButton = target.closest("[data-edit-trip-id]");
 
-    if (!(button instanceof HTMLButtonElement)) {
+    if (editButton instanceof HTMLButtonElement) {
+      const tripId = editButton.getAttribute("data-edit-trip-id");
+
+      if (tripId) {
+        openTripEditModal(tripId);
+      }
+
       return;
     }
 
-    const tripId = button.getAttribute("data-delete-trip-id");
+    const deleteButton = target.closest("[data-delete-trip-id]");
+
+    if (!(deleteButton instanceof HTMLButtonElement)) {
+      return;
+    }
+
+    const tripId = deleteButton.getAttribute("data-delete-trip-id");
 
     if (!tripId) {
       return;
@@ -229,7 +351,7 @@ function bindAdminEvents() {
       return;
     }
 
-    button.disabled = true;
+    deleteButton.disabled = true;
 
     try {
       await adminDeleteTrip(tripId);
@@ -237,7 +359,7 @@ function bindAdminEvents() {
       showToast("Trip deleted successfully.", "success");
     } catch (error) {
       showToast(error.message || "Failed to delete trip.", "danger");
-      button.disabled = false;
+      deleteButton.disabled = false;
     }
   });
 }
@@ -248,7 +370,7 @@ export function AdminPage() {
       <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
           <h1 class="h3 fw-semibold mb-1">Admin Panel</h1>
-          <p class="text-muted mb-0">Manage users and active platform trips.</p>
+          <p class="text-muted mb-0">Manage users and all platform trips.</p>
         </div>
       </div>
 
@@ -262,13 +384,55 @@ export function AdminPage() {
 
         <section class="card border-0 shadow-sm">
           <div class="card-body">
-            <h2 class="h5 mb-3">All Active Trips</h2>
+            <h2 class="h5 mb-3">All Trips</h2>
             <div id="adminTripsTableHost"></div>
           </div>
         </section>
       </div>
 
       <div class="toast-container position-fixed bottom-0 end-0 p-3" id="adminToastContainer"></div>
+
+      <div class="modal fade" id="editTripModal" tabindex="-1" aria-labelledby="editTripModalTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h2 class="modal-title fs-5" id="editTripModalTitle">Edit Trip</h2>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="editTripForm">
+              <div class="modal-body">
+                <input type="hidden" name="trip_id" id="editTripId" />
+                <div class="row g-3">
+                  <div class="col-12 col-md-6">
+                    <label for="editFromCity" class="form-label">From City</label>
+                    <input id="editFromCity" name="from_city" type="text" class="form-control" required />
+                  </div>
+                  <div class="col-12 col-md-6">
+                    <label for="editToCity" class="form-label">To City</label>
+                    <input id="editToCity" name="to_city" type="text" class="form-control" required />
+                  </div>
+                  <div class="col-12">
+                    <label for="editDateTime" class="form-label">Date & Time</label>
+                    <input id="editDateTime" name="date_time" type="datetime-local" class="form-control" required />
+                  </div>
+                  <div class="col-12 col-md-6">
+                    <label for="editPrice" class="form-label">Price</label>
+                    <input id="editPrice" name="price" type="number" class="form-control" min="0" step="0.01" required />
+                  </div>
+                  <div class="col-12 col-md-6">
+                    <label for="editSeats" class="form-label">Available Seats</label>
+                    <input id="editSeats" name="available_seats" type="number" class="form-control" min="0" step="1" required />
+                  </div>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary" id="saveTripChangesButton">Save Changes</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
     </main>
   `;
 }
@@ -289,6 +453,7 @@ export async function setupAdminPage() {
   try {
     await loadAdminData();
     bindAdminEvents();
+    bindEditTripForm();
   } catch (error) {
     showAccessDenied(error.message || "Unable to load admin data.");
   }

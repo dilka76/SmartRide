@@ -69,15 +69,19 @@ export async function createTrip(tripData) {
   return data;
 }
 
-export async function getAllTrips(filters = {}) {
+export async function getAllTrips(filters = {}, options = {}) {
+  const includeAll = options.includeAll === true;
+
   let query = supabase
     .from("trips")
     .select(
       "id, from_city, to_city, date_time, price, available_seats, car_photo_url, driver:profiles!trips_driver_id_fkey(full_name)"
     )
-    .gt("available_seats", 0)
-    .gte("date_time", new Date().toISOString())
     .order("date_time", { ascending: true });
+
+  if (!includeAll) {
+    query = query.gt("available_seats", 0).gte("date_time", new Date().toISOString());
+  }
 
   if (filters.from_city) {
     query = query.ilike("from_city", `%${filters.from_city}%`);
@@ -238,6 +242,38 @@ export async function adminDeleteTrip(tripId) {
   }
 
   const { error } = await supabase.from("trips").delete().eq("id", tripId);
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function adminUpdateTrip(tripId, updates) {
+  if (!tripId) {
+    throw new Error("Trip ID is required.");
+  }
+
+  const payload = {
+    from_city: updates.from_city,
+    to_city: updates.to_city,
+    date_time: updates.date_time,
+    price: Number(updates.price),
+    available_seats: Number(updates.available_seats),
+  };
+
+  const { error } = await supabase.from("trips").update(payload).eq("id", tripId);
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function deleteBooking(bookingId) {
+  if (!bookingId) {
+    throw new Error("Booking ID is required.");
+  }
+
+  const { error } = await supabase.from("bookings").delete().eq("id", bookingId);
 
   if (error) {
     throw error;

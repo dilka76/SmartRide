@@ -1,4 +1,5 @@
-import { getAllTrips } from "../services/tripService.js";
+import { getCurrentUser } from "../services/authService.js";
+import { deleteBooking, getAllTrips, getUserBookings } from "../services/tripService.js";
 
 const PLACEHOLDER_IMAGE = "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1200&q=80";
 
@@ -15,6 +16,100 @@ function formatDateTime(value) {
   }).format(date);
 }
 
+function bookingStatusBadge(status) {
+  if (status === "approved") {
+    return '<span class="badge bg-success">Approved</span>';
+  }
+
+  return '<span class="badge bg-warning text-dark">Pending</span>';
+}
+
+function renderUserBookings(bookings) {
+  const host = document.getElementById("myBookingsHost");
+
+  if (!host) {
+    return;
+  }
+
+  if (!bookings.length) {
+    host.innerHTML = '<div class="alert alert-secondary mb-0">You do not have active travel bookings yet.</div>';
+    return;
+  }
+
+  const rows = bookings
+    .map((booking) => {
+      const trip = booking.trip;
+      return `
+        <tr>
+          <td>${trip?.from_city || "-"} → ${trip?.to_city || "-"}</td>
+          <td>${formatDateTime(trip?.date_time)}</td>
+          <td>${trip?.driver?.full_name || "Unknown"}</td>
+          <td>${bookingStatusBadge(booking.status)}</td>
+          <td>
+            <button class="btn btn-sm btn-outline-danger" type="button" data-delete-booking-id="${booking.id}">
+              <i class="bi bi-trash3"></i>
+              Delete
+            </button>
+          </td>
+        </tr>
+      `;
+    })
+    .join("");
+
+  host.innerHTML = `
+    <div class="table-responsive">
+      <table class="table align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Route</th>
+            <th>Date & Time</th>
+            <th>Driver</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+function showBookingsError(message) {
+  const host = document.getElementById("myBookingsHost");
+
+  if (!host) {
+    return;
+  }
+
+  host.innerHTML = `<div class="alert alert-danger mb-0">${message}</div>`;
+}
+
+async function loadUserBookings() {
+  const wrapper = document.getElementById("myBookingsSection");
+  const host = document.getElementById("myBookingsHost");
+
+  if (!wrapper || !host) {
+    return;
+  }
+
+  try {
+    const { user } = await getCurrentUser();
+
+    if (!user) {
+      wrapper.classList.add("d-none");
+      return;
+    }
+
+    wrapper.classList.remove("d-none");
+    host.innerHTML = '<div class="text-muted">Loading your travel bookings...</div>';
+
+    const bookings = await getUserBookings(user.id);
+    const activeBookings = bookings.filter((booking) => booking.status === "approved" || booking.status === "pending");
+    renderUserBookings(activeBookings);
+  } catch (error) {
+    showBookingsError(error.message || "Failed to load your bookings.");
+  }
+}
 function tripCard(trip) {
   const driverName = trip.driver?.full_name || "Unknown driver";
   const imageUrl = trip.car_photo_url || PLACEHOLDER_IMAGE;
@@ -84,11 +179,11 @@ function renderTrips(trips) {
   container.innerHTML = trips.map((trip) => tripCard(trip)).join("");
 }
 
-async function loadTrips(filters = {}) {
+async function loadTrips(filters = {}, includeAll = false) {
   showTripsLoading();
 
   try {
-    const trips = await getAllTrips(filters);
+    const trips = await getAllTrips(filters, { includeAll });
     renderTrips(trips);
   } catch (error) {
     showTripsError(error.message || "Failed to load trips.");
@@ -137,6 +232,16 @@ export function HomePage() {
       </section>
 
       <section>
+        <div id="myBookingsSection" class="card border-0 shadow-sm mb-4 d-none">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h2 class="h5 mb-0">My Travel Bookings</h2>
+              <span class="small text-muted">Active: Approved / Pending</span>
+            </div>
+            <div id="myBookingsHost"></div>
+          </div>
+        </div>
+
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h2 class="h4 mb-0">Available Smart Routes</h2>
         </div>
@@ -148,8 +253,58 @@ export function HomePage() {
 
 export function setupHomePage() {
   const searchForm = document.getElementById("tripSearchForm");
+  const myBookingsHost = document.getElementById("myBookingsHost");
+  let isAdminViewer = false;
 
-  loadTrips();
+  getCurrentUser()
+    .then(({ profile }) => {
+      isAdminViewer = profile?.role === "admin";
+      return loadTrips({}, isAdminViewer);
+    })
+    .catch(() => {
+      isAdminViewer = false;
+      return loadTrips({}, false);
+    });
+
+  loadUserBookings();
+
+  if (myBookingsHost) {
+    myBookingsHost.addEventListener("click", async (event) => {
+      const target = event.target;
+
+      if (!(target instanceof HTMLElement)) {
+        return;
+      }
+
+      const button = target.closest("[data-delete-booking-id]");
+
+      if (!(button instanceof HTMLButtonElement)) {
+        return;
+      }
+
+      const bookingId = button.getAttribute("data-delete-booking-id");
+
+      if (!bookingId) {
+        return;
+      }
+
+      const confirmDelete = window.confirm("Delete this travel booking?");
+
+      if (!confirmDelete) {
+        return;
+      }
+
+      button.disabled = true;
+
+      try {
+        await deleteBooking(bookingId);
+        await loadUserBookings();
+      } catch (error) {
+        showBookingsError(error.message || "Failed to delete booking.");
+        button.disabled = false;
+      }
+    });
+  }
 
   if (!searchForm) {
     return;
@@ -165,6 +320,6 @@ export function setupHomePage() {
     await loadTrips({
       from_city: fromCity || undefined,
       to_city: toCity || undefined,
-    });
+    }, isAdminViewer);
   });
 }
