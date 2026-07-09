@@ -5,6 +5,7 @@ import { HomePage } from "./pages/home.js";
 import { LoginPage } from "./pages/login.js";
 import { setupLoginPage } from "./pages/login.js";
 import { DashboardPage } from "./pages/dashboard.js";
+import { setupDashboardPage } from "./pages/dashboard.js";
 import { RegisterPage } from "./pages/register.js";
 import { setupRegisterPage } from "./pages/register.js";
 
@@ -52,6 +53,9 @@ function setupPage(route) {
       break;
     case "register":
       setupRegisterPage();
+      break;
+    case "dashboard":
+      setupDashboardPage();
       break;
     default:
       break;
