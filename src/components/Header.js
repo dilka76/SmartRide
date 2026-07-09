@@ -35,9 +35,12 @@ export async function Header() {
   const userName = authState.profile?.full_name || authState.user?.email || "User";
 
   return `
-    <header class="border-bottom bg-white shadow-sm">
-      <nav class="navbar navbar-expand-lg navbar-light container py-3">
-        <a class="navbar-brand fw-semibold" href="/">SmartRide</a>
+    <header>
+      <nav class="navbar navbar-expand-lg navbar-dark container py-3 px-3 px-lg-4">
+        <a class="navbar-brand fw-semibold d-flex align-items-center gap-2" href="/">
+          <i class="bi bi-cpu-fill" aria-hidden="true"></i>
+          SmartRide
+        </a>
         <button
           class="navbar-toggler"
           type="button"

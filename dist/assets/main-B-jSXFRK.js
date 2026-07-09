@@ -40,9 +40,12 @@ ${_}`}class O extends Error{constructor({message:e,code:r,cause:s,name:n}){var i
       <button id="logoutBtn" class="btn btn-outline-danger btn-sm ms-lg-2" type="button">Logout</button>
     </li>
   `}async function Zi(){var n,i,a;let t={user:null,profile:null};try{t=await de()}catch{t={user:null,profile:null}}const e=!!t.user,r=((n=t.profile)==null?void 0:n.role)==="admin",s=((i=t.profile)==null?void 0:i.full_name)||((a=t.user)==null?void 0:a.email)||"User";return`
-    <header class="border-bottom bg-white shadow-sm">
-      <nav class="navbar navbar-expand-lg navbar-light container py-3">
-        <a class="navbar-brand fw-semibold" href="/">SmartRide</a>
+    <header>
+      <nav class="navbar navbar-expand-lg navbar-dark container py-3 px-3 px-lg-4">
+        <a class="navbar-brand fw-semibold d-flex align-items-center gap-2" href="/">
+          <i class="bi bi-cpu-fill" aria-hidden="true"></i>
+          SmartRide
+        </a>
         <button
           class="navbar-toggler"
           type="button"
@@ -63,9 +66,10 @@ ${_}`}class O extends Error{constructor({message:e,code:r,cause:s,name:n}){var i
       </nav>
     </header>
   `}function ea(){const t=document.getElementById("logoutBtn");t&&t.addEventListener("click",async()=>{try{await Yi(),window.location.href="/login.html"}catch(e){window.alert(e.message||"Failed to sign out.")}})}function ta(){return`
-    <footer class="border-top bg-light mt-auto">
+    <footer class="mt-auto">
       <div class="container py-4 text-center text-muted small">
-        <p class="mb-0">&copy; ${new Date().getFullYear()} SmartRide. All rights reserved.</p>
+        <p class="mb-1">&copy; ${new Date().getFullYear()} SmartRide. Engineered for connected travel.</p>
+        <p class="mb-0">High-tech mobility platform for modern travelers.</p>
       </div>
     </footer>
   `}const sr="car-photos";async function kt(){const{data:{session:t},error:e}=await P.auth.getSession();if(e)throw e;const r=t==null?void 0:t.user;if(!r)throw new Error("You must be logged in to perform this action.");return r}async function ra(t){var l;if(!t)return null;const e=await kt(),s=(t.name.includes(".")?(l=t.name.split(".").pop())==null?void 0:l.toLowerCase():"jpg")||"jpg",n=`${crypto.randomUUID()}.${s}`,i=`${e.id}/${n}`,{error:a}=await P.storage.from(sr).upload(i,t,{cacheControl:"3600",upsert:!1});if(a)throw a;const{data:o}=P.storage.from(sr).getPublicUrl(i);return o.publicUrl}async function sa(t){const r={driver_id:(await kt()).id,from_city:t.from_city,to_city:t.to_city,date_time:t.date_time,price:Number(t.price),available_seats:Number(t.available_seats),car_photo_url:t.car_photo_url||null},{data:s,error:n}=await P.from("trips").insert(r).select().single();if(n)throw n;return s}async function $r(t={}){let e=P.from("trips").select("id, from_city, to_city, date_time, price, available_seats, car_photo_url, driver:profiles!trips_driver_id_fkey(full_name)").gt("available_seats",0).gte("date_time",new Date().toISOString()).order("date_time",{ascending:!0});t.from_city&&(e=e.ilike("from_city",`%${t.from_city}%`)),t.to_city&&(e=e.ilike("to_city",`%${t.to_city}%`));const{data:r,error:s}=await e;if(s)throw s;return r||[]}async function Ir(t){if(!t)throw new Error("Trip ID is required.");const{data:e,error:r}=await P.from("trips").select("id, driver_id, from_city, to_city, date_time, price, available_seats, car_photo_url, driver:profiles!trips_driver_id_fkey(full_name, phone, avatar_url)").eq("id",t).single();if(r)throw r;return e}async function na(t,e){if(!t)throw new Error("Trip ID is required.");const r=await kt(),s=e||r.id;if(s!==r.id)throw new Error("You can only create bookings for your own account.");const n=await Ir(t);if(n.driver_id===s)throw new Error("You cannot book a seat on your own trip.");if(n.available_seats<=0)throw new Error("No available seats for this trip.");const{data:i,error:a}=await P.from("bookings").insert({trip_id:t,passenger_id:s,status:"pending"}).select().single();if(a)throw a.code==="23505"?new Error("You already requested a booking for this trip."):a;return i}async function ia(t){if(!t)throw new Error("User ID is required.");const{data:e,error:r}=await P.from("bookings").select("id, trip_id, status, created_at, trip:trips!bookings_trip_id_fkey(id, from_city, to_city, date_time, driver:profiles!trips_driver_id_fkey(full_name, phone))").eq("passenger_id",t).order("created_at",{ascending:!1});if(r)throw r;return e||[]}async function aa(t){if(!t)throw new Error("Driver ID is required.");const{data:e,error:r}=await P.from("trips").select("id, driver_id, from_city, to_city, date_time, available_seats, price, bookings:bookings!bookings_trip_id_fkey(id, trip_id, passenger_id, status, created_at, passenger:profiles!bookings_passenger_id_fkey(full_name, phone))").eq("driver_id",t).order("date_time",{ascending:!0});if(r)throw r;return e||[]}async function oa(t,e,r){if(!t||!e)throw new Error("Booking ID and Trip ID are required.");if(r!=="approved"&&r!=="rejected")throw new Error("Invalid booking status.");const{error:s}=await P.rpc("update_booking_status_and_adjust_seats",{p_booking_id:t,p_trip_id:e,p_new_status:r});if(s)throw s}async function la(){const{data:t,error:e}=await P.from("profiles").select("id, full_name, phone, role, created_at").order("created_at",{ascending:!1});if(e)throw e;return t||[]}async function ca(t){if(!t)throw new Error("Trip ID is required.");const{error:e}=await P.from("trips").delete().eq("id",t);if(e)throw e}const ua="https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1200&q=80";function ha(t){const e=new Date(t);return Number.isNaN(e.getTime())?"Date not available":new Intl.DateTimeFormat("en-GB",{dateStyle:"medium",timeStyle:"short"}).format(e)}function da(t){var s;const e=((s=t.driver)==null?void 0:s.full_name)||"Unknown driver";return`
@@ -97,26 +101,48 @@ ${_}`}class O extends Error{constructor({message:e,code:r,cause:s,name:n}){var i
       </div>
     `;return}e.innerHTML=t.map(r=>da(r)).join("")}}async function nr(t={}){fa();try{const e=await $r(t);ga(e)}catch(e){pa(e.message||"Failed to load trips.")}}function ma(){return`
     <main class="container py-5">
-      <section class="bg-white border rounded-4 shadow-sm p-4 mb-4">
-        <h1 class="h3 fw-semibold mb-1">Find Your Next Ride</h1>
-        <p class="text-muted mb-4">Search available trips by departure and destination city.</p>
+      <section class="home-hero mb-5">
+        <div class="hero-glow"></div>
+        <div class="hero-glow alt"></div>
+        <div class="digital-art-layer" aria-hidden="true">
+          <i class="bi bi-airplane-fill travel-icon"></i>
+          <i class="bi bi-train-front-fill travel-icon"></i>
+          <i class="bi bi-geo-alt-fill travel-icon"></i>
+          <i class="bi bi-globe-americas travel-icon"></i>
+          <i class="bi bi-luggage-fill travel-icon"></i>
+          <i class="bi bi-sign-turn-right-fill travel-icon"></i>
+        </div>
 
-        <form id="tripSearchForm" class="row g-3 align-items-end" novalidate>
-          <div class="col-12 col-md-5">
-            <label for="searchFromCity" class="form-label">From City</label>
-            <input id="searchFromCity" name="from_city" type="text" class="form-control" placeholder="Sofia" />
-          </div>
-          <div class="col-12 col-md-5">
-            <label for="searchToCity" class="form-label">To City</label>
-            <input id="searchToCity" name="to_city" type="text" class="form-control" placeholder="Plovdiv" />
-          </div>
-          <div class="col-12 col-md-2 d-grid">
-            <button type="submit" class="btn btn-primary">Search</button>
-          </div>
-        </form>
+        <div class="hero-content">
+          <p class="text-uppercase small mb-2" style="letter-spacing: 0.12em;">Smart Mobility Network</p>
+          <h1 class="hero-title mb-3">Travel Smarter Through A Digital Ride Grid</h1>
+          <p class="lead text-muted mb-4">Connect with verified drivers, discover routes in seconds, and experience next-gen city-to-city travel.</p>
+
+          <a href="/create-trip.html" class="cta-travel mb-4">
+            <i class="bi bi-rocket-takeoff-fill"></i>
+            BOOK A TRAVEL
+          </a>
+
+          <form id="tripSearchForm" class="row g-3 align-items-end mt-2" novalidate>
+            <div class="col-12 col-md-5">
+              <label for="searchFromCity" class="form-label">From City</label>
+              <input id="searchFromCity" name="from_city" type="text" class="form-control" placeholder="Sofia" />
+            </div>
+            <div class="col-12 col-md-5">
+              <label for="searchToCity" class="form-label">To City</label>
+              <input id="searchToCity" name="to_city" type="text" class="form-control" placeholder="Plovdiv" />
+            </div>
+            <div class="col-12 col-md-2 d-grid">
+              <button type="submit" class="btn btn-primary">Search</button>
+            </div>
+          </form>
+        </div>
       </section>
 
       <section>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h2 class="h4 mb-0">Available Smart Routes</h2>
+        </div>
         <div id="tripsGrid" class="row g-4"></div>
       </section>
     </main>
@@ -539,7 +565,7 @@ ${_}`}class O extends Error{constructor({message:e,code:r,cause:s,name:n}){var i
   `}function ct(t,e="danger"){const r=document.getElementById("registerAlert");if(r){if(!t){r.innerHTML="";return}r.innerHTML=`
     <div class="alert alert-${e}" role="alert">${t}</div>
   `}}function Ga(){const t=document.getElementById("registerForm"),e=document.getElementById("registerSubmit");!t||!e||t.addEventListener("submit",async r=>{r.preventDefault(),ct("");const s=new FormData(t),n=String(s.get("fullName")||"").trim(),i=String(s.get("phone")||"").trim(),a=String(s.get("email")||"").trim(),o=String(s.get("password")||"");e.disabled=!0,e.textContent="Creating account...";try{await Ji(a,o,n,i),ct("Registration successful. Redirecting to login...","success"),setTimeout(()=>{window.location.href="/login.html"},800)}catch(l){ct(l.message||"Registration failed. Please try again.")}finally{e.disabled=!1,e.textContent="Create Account"}})}function Ja(){const t=window.location.pathname;return t==="/"||t==="/index.html"?"home":t==="/login"||t==="/login.html"?"login":t==="/register"||t==="/register.html"?"register":t==="/dashboard"||t.startsWith("/dashboard/")||t==="/dashboard.html"?"dashboard":t==="/create-trip"||t==="/create-trip.html"?"createTrip":t==="/admin"||t==="/admin.html"?"admin":t==="/profile"||t==="/profile.html"?"profile":t==="/trip-details"||t==="/trip-details.html"?"tripDetails":"home"}function za(t){switch(t){case"login":return ya();case"dashboard":return ka();case"createTrip":return Ea();case"admin":return $a();case"profile":return Da();case"tripDetails":return Fa();case"register":return Va();case"home":default:return ma()}}function Ya(t){switch(t){case"login":ba();break;case"register":Ga();break;case"dashboard":Sa();break;case"createTrip":Aa();break;case"admin":Ia();break;case"profile":Ba();break;case"tripDetails":Wa();break;case"home":va();break}}async function or(){const t=document.getElementById("app");if(!t)return;const e=Ja(),r=await Zi();t.innerHTML=`
-    <div class="d-flex min-vh-100 flex-column bg-body-tertiary">
+    <div class="smart-shell d-flex min-vh-100 flex-column">
       ${r}
       ${za(e)}
       ${ta()}

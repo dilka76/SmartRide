@@ -98,26 +98,48 @@ async function loadTrips(filters = {}) {
 export function HomePage() {
   return `
     <main class="container py-5">
-      <section class="bg-white border rounded-4 shadow-sm p-4 mb-4">
-        <h1 class="h3 fw-semibold mb-1">Find Your Next Ride</h1>
-        <p class="text-muted mb-4">Search available trips by departure and destination city.</p>
+      <section class="home-hero mb-5">
+        <div class="hero-glow"></div>
+        <div class="hero-glow alt"></div>
+        <div class="digital-art-layer" aria-hidden="true">
+          <i class="bi bi-airplane-fill travel-icon"></i>
+          <i class="bi bi-train-front-fill travel-icon"></i>
+          <i class="bi bi-geo-alt-fill travel-icon"></i>
+          <i class="bi bi-globe-americas travel-icon"></i>
+          <i class="bi bi-luggage-fill travel-icon"></i>
+          <i class="bi bi-sign-turn-right-fill travel-icon"></i>
+        </div>
 
-        <form id="tripSearchForm" class="row g-3 align-items-end" novalidate>
-          <div class="col-12 col-md-5">
-            <label for="searchFromCity" class="form-label">From City</label>
-            <input id="searchFromCity" name="from_city" type="text" class="form-control" placeholder="Sofia" />
-          </div>
-          <div class="col-12 col-md-5">
-            <label for="searchToCity" class="form-label">To City</label>
-            <input id="searchToCity" name="to_city" type="text" class="form-control" placeholder="Plovdiv" />
-          </div>
-          <div class="col-12 col-md-2 d-grid">
-            <button type="submit" class="btn btn-primary">Search</button>
-          </div>
-        </form>
+        <div class="hero-content">
+          <p class="text-uppercase small mb-2" style="letter-spacing: 0.12em;">Smart Mobility Network</p>
+          <h1 class="hero-title mb-3">Travel Smarter Through A Digital Ride Grid</h1>
+          <p class="lead text-muted mb-4">Connect with verified drivers, discover routes in seconds, and experience next-gen city-to-city travel.</p>
+
+          <a href="/create-trip.html" class="cta-travel mb-4">
+            <i class="bi bi-rocket-takeoff-fill"></i>
+            BOOK A TRAVEL
+          </a>
+
+          <form id="tripSearchForm" class="row g-3 align-items-end mt-2" novalidate>
+            <div class="col-12 col-md-5">
+              <label for="searchFromCity" class="form-label">From City</label>
+              <input id="searchFromCity" name="from_city" type="text" class="form-control" placeholder="Sofia" />
+            </div>
+            <div class="col-12 col-md-5">
+              <label for="searchToCity" class="form-label">To City</label>
+              <input id="searchToCity" name="to_city" type="text" class="form-control" placeholder="Plovdiv" />
+            </div>
+            <div class="col-12 col-md-2 d-grid">
+              <button type="submit" class="btn btn-primary">Search</button>
+            </div>
+          </form>
+        </div>
       </section>
 
       <section>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h2 class="h4 mb-0">Available Smart Routes</h2>
+        </div>
         <div id="tripsGrid" class="row g-4"></div>
       </section>
     </main>

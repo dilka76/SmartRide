@@ -122,7 +122,7 @@ export async function renderRouter() {
   const headerMarkup = await Header();
 
   app.innerHTML = `
-    <div class="d-flex min-vh-100 flex-column bg-body-tertiary">
+    <div class="smart-shell d-flex min-vh-100 flex-column">
       ${headerMarkup}
       ${getPageMarkup(route)}
       ${Footer()}
