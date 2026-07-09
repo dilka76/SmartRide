@@ -1,11 +1,15 @@
 import { Header } from "./components/Header.js";
+import { setupHeaderEvents } from "./components/Header.js";
 import { Footer } from "./components/Footer.js";
 import { HomePage } from "./pages/home.js";
 import { LoginPage } from "./pages/login.js";
+import { setupLoginPage } from "./pages/login.js";
 import { DashboardPage } from "./pages/dashboard.js";
 import { RegisterPage } from "./pages/register.js";
+import { setupRegisterPage } from "./pages/register.js";
 
 function getRoute() {
+  // Support both clean paths and *.html entries in MPA mode.
   const pathname = window.location.pathname;
 
   if (pathname === "/" || pathname === "/index.html") {
@@ -41,7 +45,20 @@ function getPageMarkup(route) {
   }
 }
 
-export function renderRouter() {
+function setupPage(route) {
+  switch (route) {
+    case "login":
+      setupLoginPage();
+      break;
+    case "register":
+      setupRegisterPage();
+      break;
+    default:
+      break;
+  }
+}
+
+export async function renderRouter() {
   const app = document.getElementById("app");
 
   if (!app) {
@@ -49,16 +66,24 @@ export function renderRouter() {
   }
 
   const route = getRoute();
+  // Header depends on auth state, so it is rendered asynchronously.
+  const headerMarkup = await Header();
+
   app.innerHTML = `
     <div class="d-flex min-vh-100 flex-column bg-body-tertiary">
-      ${Header()}
+      ${headerMarkup}
       ${getPageMarkup(route)}
       ${Footer()}
     </div>
   `;
+
+  setupHeaderEvents();
+  setupPage(route);
 }
 
 export function initRouter() {
   renderRouter();
-  window.addEventListener("popstate", renderRouter);
+  window.addEventListener("popstate", () => {
+    renderRouter();
+  });
 }

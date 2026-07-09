@@ -1,4 +1,37 @@
-export function Header() {
+import { getCurrentUser, signOut } from "../services/authService.js";
+
+function loggedOutLinks() {
+  return `
+    <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+    <li class="nav-item"><a class="nav-link" href="/login.html">Login</a></li>
+    <li class="nav-item"><a class="nav-link" href="/register.html">Register</a></li>
+  `;
+}
+
+function loggedInLinks() {
+  return `
+    <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+    <li class="nav-item"><a class="nav-link" href="/dashboard.html">Create Trip</a></li>
+    <li class="nav-item"><a class="nav-link" href="/dashboard.html">Profile</a></li>
+    <li class="nav-item"><a class="nav-link" href="/dashboard.html">Dashboard</a></li>
+    <li class="nav-item">
+      <button id="logoutBtn" class="btn btn-outline-danger btn-sm ms-lg-2" type="button">Logout</button>
+    </li>
+  `;
+}
+
+export async function Header() {
+  let authState = { user: null, profile: null };
+
+  try {
+    authState = await getCurrentUser();
+  } catch {
+    authState = { user: null, profile: null };
+  }
+
+  const isLoggedIn = Boolean(authState.user);
+  const userName = authState.profile?.full_name || authState.user?.email || "User";
+
   return `
     <header class="border-bottom bg-white shadow-sm">
       <nav class="navbar navbar-expand-lg navbar-light container py-3">
@@ -16,13 +49,28 @@ export function Header() {
         </button>
         <div class="collapse navbar-collapse" id="primaryNav">
           <ul class="navbar-nav ms-auto mb-2 mb-lg-0 gap-lg-2">
-            <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
-            <li class="nav-item"><a class="nav-link" href="/login">Login</a></li>
-            <li class="nav-item"><a class="nav-link" href="/register">Register</a></li>
-            <li class="nav-item"><a class="nav-link" href="/dashboard">Dashboard</a></li>
+            ${isLoggedIn ? loggedInLinks() : loggedOutLinks()}
           </ul>
+          ${isLoggedIn ? `<span class="ms-lg-3 text-muted small">Signed in as ${userName}</span>` : ""}
         </div>
       </nav>
     </header>
   `;
+}
+
+export function setupHeaderEvents() {
+  const logoutButton = document.getElementById("logoutBtn");
+
+  if (!logoutButton) {
+    return;
+  }
+
+  logoutButton.addEventListener("click", async () => {
+    try {
+      await signOut();
+      window.location.href = "/login.html";
+    } catch (error) {
+      window.alert(error.message || "Failed to sign out.");
+    }
+  });
 }
