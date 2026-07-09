@@ -1,10 +1,40 @@
 import { supabase } from "./supabaseClient.js";
 
+async function syncProfile(user, fullName, phone) {
+  if (!user?.id) {
+    return;
+  }
+
+  const fallbackName =
+    fullName ||
+    user.user_metadata?.full_name ||
+    user.email?.split("@")[0] ||
+    "User";
+
+  // Best-effort profile sync for authenticated sessions.
+  const { error } = await supabase.from("profiles").upsert({
+    id: user.id,
+    full_name: fallbackName,
+    phone: phone ?? user.user_metadata?.phone ?? null,
+    role: "user",
+  });
+
+  if (error) {
+    throw error;
+  }
+}
+
 export async function signUp(email, password, fullName, phone) {
   // Create auth user first, then mirror the identity in public.profiles.
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
+    options: {
+      data: {
+        full_name: fullName,
+        phone,
+      },
+    },
   });
 
   if (error) {
@@ -17,15 +47,10 @@ export async function signUp(email, password, fullName, phone) {
     throw new Error("Sign-up succeeded but no user was returned.");
   }
 
-  const { error: profileError } = await supabase.from("profiles").upsert({
-    id: user.id,
-    full_name: fullName,
-    phone,
-    role: "user",
-  });
-
-  if (profileError) {
-    throw profileError;
+  // If email confirmation is enabled, there might be no active session yet.
+  // In that case the DB trigger on auth.users creates the profile row.
+  if (data.session) {
+    await syncProfile(user, fullName, phone);
   }
 
   return data;
@@ -40,6 +65,8 @@ export async function signIn(email, password) {
   if (error) {
     throw error;
   }
+
+  await syncProfile(data.user, null, null);
 
   return data;
 }
