@@ -99,7 +99,7 @@ function passengerBookingsSection(bookings) {
   `;
 }
 
-function driverTripsSection(trips) {
+function driverTripsSection(trips, currentUserId) {
   if (!trips.length) {
     return `
       <div class="alert alert-secondary mb-0" role="alert">
@@ -114,8 +114,9 @@ function driverTripsSection(trips) {
         .map((booking) => {
           const passengerName = booking.passenger?.full_name || "Unknown";
           const passengerPhone = booking.passenger?.phone || "Not shared";
+          const canManageRequest = trip.driver_id === currentUserId;
           const actions =
-            booking.status === "pending"
+            booking.status === "pending" && canManageRequest
               ? `
                 <div class="d-flex gap-2">
                   <button
@@ -124,6 +125,7 @@ function driverTripsSection(trips) {
                     data-booking-action="approved"
                     data-booking-id="${booking.id}"
                     data-trip-id="${trip.id}"
+                    data-driver-id="${trip.driver_id}"
                   >Accept</button>
                   <button
                     class="btn btn-sm btn-danger"
@@ -131,6 +133,7 @@ function driverTripsSection(trips) {
                     data-booking-action="rejected"
                     data-booking-id="${booking.id}"
                     data-trip-id="${trip.id}"
+                    data-driver-id="${trip.driver_id}"
                   >Reject</button>
                 </div>
               `
@@ -255,7 +258,7 @@ async function renderProfileContent(user, profile) {
     ]);
 
     passengerHost.innerHTML = passengerBookingsSection(bookings);
-    driverHost.innerHTML = driverTripsSection(driverTrips);
+    driverHost.innerHTML = driverTripsSection(driverTrips, user.id);
   } catch (error) {
     showInlineAlert("passengerBookingsContent", error.message || "Failed to load bookings.");
     showInlineAlert("driverTripsContent", error.message || "Failed to load trips.");
@@ -279,8 +282,14 @@ function bindDriverActions(user, profile) {
     const action = target.getAttribute("data-booking-action");
     const bookingId = target.getAttribute("data-booking-id");
     const tripId = target.getAttribute("data-trip-id");
+    const driverId = target.getAttribute("data-driver-id");
 
     if (!action || !bookingId || !tripId) {
+      return;
+    }
+
+    if (driverId !== user.id) {
+      showInlineAlert("driverTripsContent", "You are not allowed to manage this booking.");
       return;
     }
 

@@ -8,12 +8,13 @@ function loggedOutLinks() {
   `;
 }
 
-function loggedInLinks() {
+function loggedInLinks(isAdmin) {
   return `
     <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
     <li class="nav-item"><a class="nav-link" href="/create-trip.html">Create Trip</a></li>
     <li class="nav-item"><a class="nav-link" href="/profile.html">Profile</a></li>
     <li class="nav-item"><a class="nav-link" href="/dashboard.html">Dashboard</a></li>
+    ${isAdmin ? '<li class="nav-item"><a class="nav-link" href="/admin.html">Admin Panel</a></li>' : ""}
     <li class="nav-item">
       <button id="logoutBtn" class="btn btn-outline-danger btn-sm ms-lg-2" type="button">Logout</button>
     </li>
@@ -30,6 +31,7 @@ export async function Header() {
   }
 
   const isLoggedIn = Boolean(authState.user);
+  const isAdmin = authState.profile?.role === "admin";
   const userName = authState.profile?.full_name || authState.user?.email || "User";
 
   return `
@@ -49,7 +51,7 @@ export async function Header() {
         </button>
         <div class="collapse navbar-collapse" id="primaryNav">
           <ul class="navbar-nav ms-auto mb-2 mb-lg-0 gap-lg-2">
-            ${isLoggedIn ? loggedInLinks() : loggedOutLinks()}
+            ${isLoggedIn ? loggedInLinks(isAdmin) : loggedOutLinks()}
           </ul>
           ${isLoggedIn ? `<span class="ms-lg-3 text-muted small">Signed in as ${userName}</span>` : ""}
         </div>

@@ -187,7 +187,7 @@ export async function getDriverTripsWithBookings(driverId) {
   const { data, error } = await supabase
     .from("trips")
     .select(
-      "id, from_city, to_city, date_time, available_seats, price, bookings:bookings!bookings_trip_id_fkey(id, trip_id, passenger_id, status, created_at, passenger:profiles!bookings_passenger_id_fkey(full_name, phone))"
+      "id, driver_id, from_city, to_city, date_time, available_seats, price, bookings:bookings!bookings_trip_id_fkey(id, trip_id, passenger_id, status, created_at, passenger:profiles!bookings_passenger_id_fkey(full_name, phone))"
     )
     .eq("driver_id", driverId)
     .order("date_time", { ascending: true });
@@ -213,6 +213,31 @@ export async function updateBookingStatus(bookingId, tripId, newStatus) {
     p_trip_id: tripId,
     p_new_status: newStatus,
   });
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function getAllProfiles() {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, full_name, phone, role, created_at")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    throw error;
+  }
+
+  return data || [];
+}
+
+export async function adminDeleteTrip(tripId) {
+  if (!tripId) {
+    throw new Error("Trip ID is required.");
+  }
+
+  const { error } = await supabase.from("trips").delete().eq("id", tripId);
 
   if (error) {
     throw error;
