@@ -158,3 +158,63 @@ export async function bookSeat(tripId, passengerId) {
 
   return data;
 }
+
+export async function getUserBookings(userId) {
+  if (!userId) {
+    throw new Error("User ID is required.");
+  }
+
+  const { data, error } = await supabase
+    .from("bookings")
+    .select(
+      "id, trip_id, status, created_at, trip:trips!bookings_trip_id_fkey(id, from_city, to_city, date_time, driver:profiles!trips_driver_id_fkey(full_name, phone))"
+    )
+    .eq("passenger_id", userId)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    throw error;
+  }
+
+  return data || [];
+}
+
+export async function getDriverTripsWithBookings(driverId) {
+  if (!driverId) {
+    throw new Error("Driver ID is required.");
+  }
+
+  const { data, error } = await supabase
+    .from("trips")
+    .select(
+      "id, from_city, to_city, date_time, available_seats, price, bookings:bookings!bookings_trip_id_fkey(id, trip_id, passenger_id, status, created_at, passenger:profiles!bookings_passenger_id_fkey(full_name, phone))"
+    )
+    .eq("driver_id", driverId)
+    .order("date_time", { ascending: true });
+
+  if (error) {
+    throw error;
+  }
+
+  return data || [];
+}
+
+export async function updateBookingStatus(bookingId, tripId, newStatus) {
+  if (!bookingId || !tripId) {
+    throw new Error("Booking ID and Trip ID are required.");
+  }
+
+  if (newStatus !== "approved" && newStatus !== "rejected") {
+    throw new Error("Invalid booking status.");
+  }
+
+  const { error } = await supabase.rpc("update_booking_status_and_adjust_seats", {
+    p_booking_id: bookingId,
+    p_trip_id: tripId,
+    p_new_status: newStatus,
+  });
+
+  if (error) {
+    throw error;
+  }
+}

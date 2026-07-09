@@ -12,7 +12,7 @@ function loggedInLinks() {
   return `
     <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
     <li class="nav-item"><a class="nav-link" href="/create-trip.html">Create Trip</a></li>
-    <li class="nav-item"><a class="nav-link" href="/dashboard.html">Profile</a></li>
+    <li class="nav-item"><a class="nav-link" href="/profile.html">Profile</a></li>
     <li class="nav-item"><a class="nav-link" href="/dashboard.html">Dashboard</a></li>
     <li class="nav-item">
       <button id="logoutBtn" class="btn btn-outline-danger btn-sm ms-lg-2" type="button">Logout</button>
