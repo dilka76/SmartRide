@@ -85,6 +85,21 @@ function renderTripDetails(trip, user) {
             <li class="list-group-item"><strong>Driver Phone:</strong> ${trip.driver?.phone || "Not shared"}</li>
           </ul>
 
+          ${
+            canBook
+              ? `
+            <div class="mb-3">
+              <label for="seatsRequestedSelect" class="form-label">Seats to book</label>
+              <select id="seatsRequestedSelect" class="form-select">
+                ${Array.from({ length: trip.available_seats }, (_, index) => index + 1)
+                  .map((count) => `<option value="${count}">${count}</option>`)
+                  .join("")}
+              </select>
+            </div>
+          `
+              : ""
+          }
+
           <button id="bookSeatButton" class="btn btn-lg btn-primary mt-auto" type="button" ${disableButton ? "disabled" : ""}>
             ${buttonLabel}
           </button>
@@ -95,6 +110,7 @@ function renderTripDetails(trip, user) {
   `;
 
   const button = document.getElementById("bookSeatButton");
+  const seatsSelect = document.getElementById("seatsRequestedSelect");
 
   if (!button) {
     return;
@@ -114,7 +130,9 @@ function renderTripDetails(trip, user) {
     button.textContent = "Sending request...";
 
     try {
-      await bookSeat(trip.id, user.id);
+      const selectedSeats = seatsSelect instanceof HTMLSelectElement ? Number(seatsSelect.value) : 1;
+
+      await bookSeat(trip.id, user.id, selectedSeats);
       showTripDetailsAlert("Booking requested! Waiting for driver approval.", "success");
       button.textContent = "Request Sent";
     } catch (error) {

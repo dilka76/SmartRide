@@ -262,6 +262,38 @@ footer {
   margin-top: 2rem;
 }
 
+.modal {
+  z-index: 2000;
+}
+
+.modal-backdrop {
+  z-index: 1990;
+}
+
+.sr-admin-booking-dialog {
+  max-width: 720px;
+}
+
+.sr-admin-booking-modal {
+  background:
+    radial-gradient(circle at top right, rgba(52, 214, 255, 0.18), transparent 34%),
+    linear-gradient(145deg, rgba(8, 16, 36, 0.96), rgba(4, 9, 22, 0.98)) !important;
+  border: 1px solid rgba(90, 244, 195, 0.2) !important;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(52, 214, 255, 0.12) inset;
+}
+
+.sr-admin-booking-modal .modal-title {
+  font-family: "Orbitron", sans-serif;
+  letter-spacing: 0.06em;
+}
+
+.sr-admin-booking-item {
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--sr-line);
+  border-radius: 18px;
+  background: rgba(11, 22, 45, 0.72);
+}
+
 @keyframes drift {
   0% {
     transform: translate3d(0, 0, 0) rotate(0deg) scale(0.92);

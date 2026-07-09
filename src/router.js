@@ -11,6 +11,7 @@ import { CreateTripPage } from "./pages/createTrip.js";
 import { setupCreateTripPage } from "./pages/createTrip.js";
 import { AdminPage } from "./pages/admin.js";
 import { setupAdminPage } from "./pages/admin.js";
+import { startBookingNotifications } from "./services/notificationService.js";
 import { ProfilePage } from "./pages/profile.js";
 import { setupProfilePage } from "./pages/profile.js";
 import { TripDetailsPage } from "./pages/tripDetails.js";
@@ -134,6 +135,7 @@ export async function renderRouter() {
 }
 
 export function initRouter() {
+  startBookingNotifications();
   renderRouter();
   window.addEventListener("popstate", () => {
     renderRouter();

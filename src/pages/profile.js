@@ -75,6 +75,7 @@ function passengerBookingsSection(bookings) {
           <td>${formatDateTime(trip?.date_time)}</td>
           <td>${driverName}</td>
           <td>${driverPhone}</td>
+          <td>${booking.seats_requested || 1}</td>
           <td>${statusBadge(booking.status)}</td>
         </tr>
       `;
@@ -90,6 +91,7 @@ function passengerBookingsSection(bookings) {
             <th>Date</th>
             <th>Driver</th>
             <th>Driver Phone</th>
+            <th>Seats</th>
             <th>Status</th>
           </tr>
         </thead>
@@ -143,6 +145,7 @@ function driverTripsSection(trips, currentUserId) {
             <tr>
               <td>${passengerName}</td>
               <td>${passengerPhone}</td>
+              <td>${booking.seats_requested || 1}</td>
               <td>${statusBadge(booking.status)}</td>
               <td>${actions}</td>
             </tr>
@@ -173,6 +176,7 @@ function driverTripsSection(trips, currentUserId) {
                     <tr>
                       <th>Passenger</th>
                       <th>Phone</th>
+                      <th>Seats</th>
                       <th>Status</th>
                       <th>Actions</th>
                     </tr>

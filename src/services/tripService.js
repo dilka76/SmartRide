@@ -120,13 +120,18 @@ export async function getTripById(tripId) {
   return data;
 }
 
-export async function bookSeat(tripId, passengerId) {
+export async function bookSeat(tripId, passengerId, seatsRequested = 1) {
   if (!tripId) {
     throw new Error("Trip ID is required.");
   }
 
   const user = await requireUser();
   const effectivePassengerId = passengerId || user.id;
+  const requestedSeats = Number(seatsRequested);
+
+  if (!Number.isInteger(requestedSeats) || requestedSeats < 1) {
+    throw new Error("Requested seats must be at least 1.");
+  }
 
   if (effectivePassengerId !== user.id) {
     throw new Error("You can only create bookings for your own account.");
@@ -138,8 +143,8 @@ export async function bookSeat(tripId, passengerId) {
     throw new Error("You cannot book a seat on your own trip.");
   }
 
-  if (trip.available_seats <= 0) {
-    throw new Error("No available seats for this trip.");
+  if (trip.available_seats < requestedSeats) {
+    throw new Error("Not enough available seats for this request.");
   }
 
   const { data, error } = await supabase
@@ -148,6 +153,7 @@ export async function bookSeat(tripId, passengerId) {
       trip_id: tripId,
       passenger_id: effectivePassengerId,
       status: "pending",
+      seats_requested: requestedSeats,
     })
     .select()
     .single();
@@ -171,7 +177,7 @@ export async function getUserBookings(userId) {
   const { data, error } = await supabase
     .from("bookings")
     .select(
-      "id, trip_id, status, created_at, trip:trips!bookings_trip_id_fkey(id, from_city, to_city, date_time, driver:profiles!trips_driver_id_fkey(full_name, phone))"
+      "id, trip_id, status, seats_requested, created_at, trip:trips!bookings_trip_id_fkey(id, from_city, to_city, date_time, driver:profiles!trips_driver_id_fkey(full_name, phone))"
     )
     .eq("passenger_id", userId)
     .order("created_at", { ascending: false });
@@ -191,10 +197,26 @@ export async function getDriverTripsWithBookings(driverId) {
   const { data, error } = await supabase
     .from("trips")
     .select(
-      "id, driver_id, from_city, to_city, date_time, available_seats, price, bookings:bookings!bookings_trip_id_fkey(id, trip_id, passenger_id, status, created_at, passenger:profiles!bookings_passenger_id_fkey(full_name, phone))"
+      "id, driver_id, from_city, to_city, date_time, available_seats, price, bookings:bookings!bookings_trip_id_fkey(id, trip_id, passenger_id, status, seats_requested, created_at, passenger:profiles!bookings_passenger_id_fkey(full_name, phone))"
     )
     .eq("driver_id", driverId)
     .order("date_time", { ascending: true });
+
+  if (error) {
+    throw error;
+  }
+
+  return data || [];
+}
+
+export async function getAllPendingBookings() {
+  const { data, error } = await supabase
+    .from("bookings")
+    .select(
+      "id, trip_id, passenger_id, status, seats_requested, created_at, trip:trips!bookings_trip_id_fkey(id, from_city, to_city, date_time, driver:profiles!trips_driver_id_fkey(full_name)), passenger:profiles!bookings_passenger_id_fkey(full_name, phone)"
+    )
+    .eq("status", "pending")
+    .order("created_at", { ascending: false });
 
   if (error) {
     throw error;

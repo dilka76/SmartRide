@@ -389,51 +389,51 @@ export function AdminPage() {
           </div>
         </section>
       </div>
+    </main>
 
-      <div class="toast-container position-fixed bottom-0 end-0 p-3" id="adminToastContainer"></div>
+    <div class="toast-container position-fixed bottom-0 end-0 p-3" id="adminToastContainer"></div>
 
-      <div class="modal fade" id="editTripModal" tabindex="-1" aria-labelledby="editTripModalTitle" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h2 class="modal-title fs-5" id="editTripModalTitle">Edit Trip</h2>
-              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form id="editTripForm">
-              <div class="modal-body">
-                <input type="hidden" name="trip_id" id="editTripId" />
-                <div class="row g-3">
-                  <div class="col-12 col-md-6">
-                    <label for="editFromCity" class="form-label">From City</label>
-                    <input id="editFromCity" name="from_city" type="text" class="form-control" required />
-                  </div>
-                  <div class="col-12 col-md-6">
-                    <label for="editToCity" class="form-label">To City</label>
-                    <input id="editToCity" name="to_city" type="text" class="form-control" required />
-                  </div>
-                  <div class="col-12">
-                    <label for="editDateTime" class="form-label">Date & Time</label>
-                    <input id="editDateTime" name="date_time" type="datetime-local" class="form-control" required />
-                  </div>
-                  <div class="col-12 col-md-6">
-                    <label for="editPrice" class="form-label">Price</label>
-                    <input id="editPrice" name="price" type="number" class="form-control" min="0" step="0.01" required />
-                  </div>
-                  <div class="col-12 col-md-6">
-                    <label for="editSeats" class="form-label">Available Seats</label>
-                    <input id="editSeats" name="available_seats" type="number" class="form-control" min="0" step="1" required />
-                  </div>
+    <div class="modal fade" id="editTripModal" tabindex="-1" aria-labelledby="editTripModalTitle" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2 class="modal-title fs-5" id="editTripModalTitle">Edit Trip</h2>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <form id="editTripForm">
+            <div class="modal-body">
+              <input type="hidden" name="trip_id" id="editTripId" />
+              <div class="row g-3">
+                <div class="col-12 col-md-6">
+                  <label for="editFromCity" class="form-label">From City</label>
+                  <input id="editFromCity" name="from_city" type="text" class="form-control" required />
+                </div>
+                <div class="col-12 col-md-6">
+                  <label for="editToCity" class="form-label">To City</label>
+                  <input id="editToCity" name="to_city" type="text" class="form-control" required />
+                </div>
+                <div class="col-12">
+                  <label for="editDateTime" class="form-label">Date & Time</label>
+                  <input id="editDateTime" name="date_time" type="datetime-local" class="form-control" required />
+                </div>
+                <div class="col-12 col-md-6">
+                  <label for="editPrice" class="form-label">Price</label>
+                  <input id="editPrice" name="price" type="number" class="form-control" min="0" step="0.01" required />
+                </div>
+                <div class="col-12 col-md-6">
+                  <label for="editSeats" class="form-label">Available Seats</label>
+                  <input id="editSeats" name="available_seats" type="number" class="form-control" min="0" step="1" required />
                 </div>
               </div>
-              <div class="modal-footer">
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="submit" class="btn btn-primary" id="saveTripChangesButton">Save Changes</button>
-              </div>
-            </form>
-          </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+              <button type="submit" class="btn btn-primary" id="saveTripChangesButton">Save Changes</button>
+            </div>
+          </form>
         </div>
       </div>
-    </main>
+    </div>
   `;
 }
 

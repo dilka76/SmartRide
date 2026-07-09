@@ -1,5 +1,5 @@
 import { getCurrentUser } from "../services/authService.js";
-import { deleteBooking, getAllTrips, getUserBookings } from "../services/tripService.js";
+import { deleteBooking, getAllPendingBookings, getAllTrips, getUserBookings, updateBookingStatus } from "../services/tripService.js";
 
 const PLACEHOLDER_IMAGE = "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1200&q=80";
 
@@ -44,6 +44,7 @@ function renderUserBookings(bookings) {
           <td>${trip?.from_city || "-"} → ${trip?.to_city || "-"}</td>
           <td>${formatDateTime(trip?.date_time)}</td>
           <td>${trip?.driver?.full_name || "Unknown"}</td>
+          <td>${booking.seats_requested || 1}</td>
           <td>${bookingStatusBadge(booking.status)}</td>
           <td>
             <button class="btn btn-sm btn-outline-danger" type="button" data-delete-booking-id="${booking.id}">
@@ -64,6 +65,7 @@ function renderUserBookings(bookings) {
             <th>Route</th>
             <th>Date & Time</th>
             <th>Driver</th>
+            <th>Seats</th>
             <th>Status</th>
             <th>Action</th>
           </tr>
@@ -82,6 +84,100 @@ function showBookingsError(message) {
   }
 
   host.innerHTML = `<div class="alert alert-danger mb-0">${message}</div>`;
+}
+
+function renderAdminPendingBookings(bookings) {
+  const host = document.getElementById("adminPendingBookingsHost");
+
+  if (!host) {
+    return;
+  }
+
+  if (!bookings.length) {
+    host.innerHTML = '<div class="alert alert-secondary mb-0">No pending booking requests right now.</div>';
+    return;
+  }
+
+  const rows = bookings
+    .map((booking) => {
+      const trip = booking.trip;
+      const passenger = booking.passenger;
+
+      return `
+        <tr>
+          <td>${trip?.from_city || "-"} → ${trip?.to_city || "-"}</td>
+          <td>${formatDateTime(trip?.date_time)}</td>
+          <td>${passenger?.full_name || "Unknown"}</td>
+          <td>${passenger?.phone || "N/A"}</td>
+          <td>${booking.seats_requested || 1}</td>
+          <td><span class="badge bg-warning text-dark">Pending</span></td>
+          <td>
+            <div class="d-flex gap-2">
+              <button class="btn btn-sm btn-success" type="button" data-admin-booking-action="approved" data-booking-id="${booking.id}" data-trip-id="${booking.trip_id}">
+                Approve
+              </button>
+              <button class="btn btn-sm btn-danger" type="button" data-admin-booking-action="rejected" data-booking-id="${booking.id}" data-trip-id="${booking.trip_id}">
+                Reject
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    })
+    .join("");
+
+  host.innerHTML = `
+    <div class="table-responsive">
+      <table class="table align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Route</th>
+            <th>Date & Time</th>
+            <th>Passenger</th>
+            <th>Phone</th>
+            <th>Seats</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+function showAdminPendingBookingsError(message) {
+  const host = document.getElementById("adminPendingBookingsHost");
+
+  if (!host) {
+    return;
+  }
+
+  host.innerHTML = `<div class="alert alert-danger mb-0">${message}</div>`;
+}
+
+async function loadAdminPendingBookings(isAdmin) {
+  const wrapper = document.getElementById("adminPendingBookingsSection");
+  const host = document.getElementById("adminPendingBookingsHost");
+
+  if (!wrapper || !host) {
+    return;
+  }
+
+  if (!isAdmin) {
+    wrapper.classList.add("d-none");
+    return;
+  }
+
+  wrapper.classList.remove("d-none");
+  host.innerHTML = '<div class="text-muted">Loading pending booking requests...</div>';
+
+  try {
+    const bookings = await getAllPendingBookings();
+    renderAdminPendingBookings(bookings);
+  } catch (error) {
+    showAdminPendingBookingsError(error.message || "Failed to load pending booking requests.");
+  }
 }
 
 async function loadUserBookings() {
@@ -242,6 +338,16 @@ export function HomePage() {
           </div>
         </div>
 
+        <div id="adminPendingBookingsSection" class="card border-0 shadow-sm mb-4 d-none">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h2 class="h5 mb-0">Incoming Booking Requests</h2>
+              <span class="small text-muted">Admin overview of all pending requests</span>
+            </div>
+            <div id="adminPendingBookingsHost"></div>
+          </div>
+        </div>
+
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h2 class="h4 mb-0">Available Smart Routes</h2>
         </div>
@@ -254,15 +360,18 @@ export function HomePage() {
 export function setupHomePage() {
   const searchForm = document.getElementById("tripSearchForm");
   const myBookingsHost = document.getElementById("myBookingsHost");
+  const adminPendingBookingsHost = document.getElementById("adminPendingBookingsHost");
   let isAdminViewer = false;
 
   getCurrentUser()
     .then(({ profile }) => {
       isAdminViewer = profile?.role === "admin";
+      loadAdminPendingBookings(isAdminViewer);
       return loadTrips({}, isAdminViewer);
     })
     .catch(() => {
       isAdminViewer = false;
+      loadAdminPendingBookings(false);
       return loadTrips({}, false);
     });
 
@@ -301,6 +410,40 @@ export function setupHomePage() {
         await loadUserBookings();
       } catch (error) {
         showBookingsError(error.message || "Failed to delete booking.");
+        button.disabled = false;
+      }
+    });
+  }
+
+  if (adminPendingBookingsHost) {
+    adminPendingBookingsHost.addEventListener("click", async (event) => {
+      const target = event.target;
+
+      if (!(target instanceof HTMLElement)) {
+        return;
+      }
+
+      const button = target.closest("[data-admin-booking-action]");
+
+      if (!(button instanceof HTMLButtonElement)) {
+        return;
+      }
+
+      const action = button.getAttribute("data-admin-booking-action");
+      const bookingId = button.getAttribute("data-booking-id");
+      const tripId = button.getAttribute("data-trip-id");
+
+      if (!action || !bookingId || !tripId) {
+        return;
+      }
+
+      button.disabled = true;
+
+      try {
+        await updateBookingStatus(bookingId, tripId, action);
+        await Promise.all([loadAdminPendingBookings(true), loadTrips({}, true)]);
+      } catch (error) {
+        showAdminPendingBookingsError(error.message || "Failed to update booking request.");
         button.disabled = false;
       }
     });
