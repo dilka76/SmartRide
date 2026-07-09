@@ -225,6 +225,21 @@ export async function getAllPendingBookings() {
   return data || [];
 }
 
+export async function getAllAdminBookings() {
+  const { data, error } = await supabase
+    .from("bookings")
+    .select(
+      "id, trip_id, passenger_id, status, seats_requested, created_at, trip:trips!bookings_trip_id_fkey(id, from_city, to_city, date_time, driver:profiles!trips_driver_id_fkey(full_name)), passenger:profiles!bookings_passenger_id_fkey(full_name, phone)"
+    )
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    throw error;
+  }
+
+  return data || [];
+}
+
 export async function updateBookingStatus(bookingId, tripId, newStatus) {
   if (!bookingId || !tripId) {
     throw new Error("Booking ID and Trip ID are required.");

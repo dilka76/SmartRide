@@ -1,5 +1,6 @@
 import { getCurrentUser } from "../services/authService.js";
-import { deleteBooking, getAllPendingBookings, getAllTrips, getUserBookings, updateBookingStatus } from "../services/tripService.js";
+import { deleteBooking, getAllAdminBookings, getAllPendingBookings, getAllTrips, getUserBookings, updateBookingStatus } from "../services/tripService.js";
+import { setAdminNotificationRefreshCallback } from "../services/notificationService.js";
 
 const PLACEHOLDER_IMAGE = "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1200&q=80";
 
@@ -19,6 +20,10 @@ function formatDateTime(value) {
 function bookingStatusBadge(status) {
   if (status === "approved") {
     return '<span class="badge bg-success">Approved</span>';
+  }
+
+  if (status === "rejected") {
+    return '<span class="badge bg-danger">Rejected</span>';
   }
 
   return '<span class="badge bg-warning text-dark">Pending</span>';
@@ -94,7 +99,7 @@ function renderAdminPendingBookings(bookings) {
   }
 
   if (!bookings.length) {
-    host.innerHTML = '<div class="alert alert-secondary mb-0">No pending booking requests right now.</div>';
+    host.innerHTML = '<div class="alert alert-secondary mb-0">No booking requests found.</div>';
     return;
   }
 
@@ -103,15 +108,9 @@ function renderAdminPendingBookings(bookings) {
       const trip = booking.trip;
       const passenger = booking.passenger;
 
-      return `
-        <tr>
-          <td>${trip?.from_city || "-"} → ${trip?.to_city || "-"}</td>
-          <td>${formatDateTime(trip?.date_time)}</td>
-          <td>${passenger?.full_name || "Unknown"}</td>
-          <td>${passenger?.phone || "N/A"}</td>
-          <td>${booking.seats_requested || 1}</td>
-          <td><span class="badge bg-warning text-dark">Pending</span></td>
-          <td>
+      const actionButtons =
+        booking.status === "pending"
+          ? `
             <div class="d-flex gap-2">
               <button class="btn btn-sm btn-success" type="button" data-admin-booking-action="approved" data-booking-id="${booking.id}" data-trip-id="${booking.trip_id}">
                 Approve
@@ -120,7 +119,18 @@ function renderAdminPendingBookings(bookings) {
                 Reject
               </button>
             </div>
-          </td>
+          `
+          : "-";
+
+      return `
+        <tr>
+          <td>${trip?.from_city || "-"} → ${trip?.to_city || "-"}</td>
+          <td>${formatDateTime(trip?.date_time)}</td>
+          <td>${passenger?.full_name || "Unknown"}</td>
+          <td>${passenger?.phone || "N/A"}</td>
+          <td>${booking.seats_requested || 1}</td>
+          <td>${bookingStatusBadge(booking.status)}</td>
+          <td>${actionButtons}</td>
         </tr>
       `;
     })
@@ -170,10 +180,10 @@ async function loadAdminPendingBookings(isAdmin) {
   }
 
   wrapper.classList.remove("d-none");
-  host.innerHTML = '<div class="text-muted">Loading pending booking requests...</div>';
+  host.innerHTML = '<div class="text-muted">Loading booking requests...</div>';
 
   try {
-    const bookings = await getAllPendingBookings();
+    const bookings = await getAllAdminBookings();
     renderAdminPendingBookings(bookings);
   } catch (error) {
     showAdminPendingBookingsError(error.message || "Failed to load pending booking requests.");
@@ -341,8 +351,8 @@ export function HomePage() {
         <div id="adminPendingBookingsSection" class="card border-0 shadow-sm mb-4 d-none">
           <div class="card-body">
             <div class="d-flex justify-content-between align-items-center mb-3">
-              <h2 class="h5 mb-0">Incoming Booking Requests</h2>
-              <span class="small text-muted">Admin overview of all pending requests</span>
+              <h2 class="h5 mb-0">Booking Requests Feed</h2>
+              <span class="small text-muted">Admin overview of all requests and decisions</span>
             </div>
             <div id="adminPendingBookingsHost"></div>
           </div>
@@ -366,6 +376,11 @@ export function setupHomePage() {
   getCurrentUser()
     .then(({ profile }) => {
       isAdminViewer = profile?.role === "admin";
+      if (isAdminViewer) {
+        setAdminNotificationRefreshCallback(async () => {
+          await Promise.all([loadAdminPendingBookings(true), loadTrips({}, true)]);
+        });
+      }
       loadAdminPendingBookings(isAdminViewer);
       return loadTrips({}, isAdminViewer);
     })

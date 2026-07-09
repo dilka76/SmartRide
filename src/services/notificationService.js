@@ -1,8 +1,9 @@
 import { getCurrentUser } from "./authService.js";
-import { getAllPendingBookings, getUserBookings } from "./tripService.js";
+import { getAllPendingBookings, getUserBookings, updateBookingStatus } from "./tripService.js";
 
 const POLL_INTERVAL_MS = 30000;
 let notificationTimerId = null;
+let adminRefreshCallback = null;
 
 function storageKeyForUser(userId) {
   return `smartride_booking_status_snapshot_${userId}`;
@@ -109,6 +110,8 @@ function ensureAdminBookingModal() {
             </div>
             <div class="modal-body pt-3" id="adminNewBookingModalBody"></div>
             <div class="modal-footer border-0 pt-0">
+              <button type="button" class="btn btn-outline-danger d-none" id="adminModalRejectButton">Reject</button>
+              <button type="button" class="btn btn-success d-none" id="adminModalApproveButton">Approve</button>
               <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Review Later</button>
             </div>
           </div>
@@ -135,10 +138,14 @@ function showAdminNewBookingModal(bookings) {
 
   const modalElement = ensureAdminBookingModal();
   const body = document.getElementById("adminNewBookingModalBody");
+  const approveButton = document.getElementById("adminModalApproveButton");
+  const rejectButton = document.getElementById("adminModalRejectButton");
 
-  if (!modalElement || !body) {
+  if (!modalElement || !body || !approveButton || !rejectButton) {
     return;
   }
+
+  const primaryBooking = bookings[0];
 
   body.innerHTML = bookings
     .map((booking) => {
@@ -158,6 +165,53 @@ function showAdminNewBookingModal(bookings) {
       `;
     })
     .join("");
+
+  approveButton.classList.remove("d-none");
+  rejectButton.classList.remove("d-none");
+  approveButton.disabled = false;
+  rejectButton.disabled = false;
+
+  approveButton.onclick = async () => {
+    if (!primaryBooking) {
+      return;
+    }
+
+    approveButton.disabled = true;
+    rejectButton.disabled = true;
+
+    try {
+      await updateBookingStatus(primaryBooking.id, primaryBooking.trip_id, "approved");
+      if (typeof adminRefreshCallback === "function") {
+        await adminRefreshCallback();
+      }
+      const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+      modal.hide();
+    } catch {
+      approveButton.disabled = false;
+      rejectButton.disabled = false;
+    }
+  };
+
+  rejectButton.onclick = async () => {
+    if (!primaryBooking) {
+      return;
+    }
+
+    approveButton.disabled = true;
+    rejectButton.disabled = true;
+
+    try {
+      await updateBookingStatus(primaryBooking.id, primaryBooking.trip_id, "rejected");
+      if (typeof adminRefreshCallback === "function") {
+        await adminRefreshCallback();
+      }
+      const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+      modal.hide();
+    } catch {
+      approveButton.disabled = false;
+      rejectButton.disabled = false;
+    }
+  };
 
   if (typeof bootstrap === "undefined" || !bootstrap.Modal) {
     window.alert("New booking request received.");
@@ -245,4 +299,8 @@ export function startBookingNotifications() {
       // Silent fail to avoid noisy polling errors.
     });
   }, POLL_INTERVAL_MS);
+}
+
+export function setAdminNotificationRefreshCallback(callback) {
+  adminRefreshCallback = callback;
 }
