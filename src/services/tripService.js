@@ -120,7 +120,7 @@ export async function getTripById(tripId) {
   return data;
 }
 
-export async function bookSeat(tripId, passengerId, seatsRequested = 1) {
+export async function bookSeat(tripId, passengerId, seatsRequested = 1, bookingDetails = {}) {
   if (!tripId) {
     throw new Error("Trip ID is required.");
   }
@@ -128,9 +128,16 @@ export async function bookSeat(tripId, passengerId, seatsRequested = 1) {
   const user = await requireUser();
   const effectivePassengerId = passengerId || user.id;
   const requestedSeats = Number(seatsRequested);
+  const passengerPhone = typeof bookingDetails.passengerPhone === "string" ? bookingDetails.passengerPhone.trim() : "";
+  const passengerNoteRaw = typeof bookingDetails.passengerNote === "string" ? bookingDetails.passengerNote : "";
+  const passengerNote = passengerNoteRaw.trim();
 
   if (!Number.isInteger(requestedSeats) || requestedSeats < 1) {
     throw new Error("Requested seats must be at least 1.");
+  }
+
+  if (!passengerPhone) {
+    throw new Error("Phone number is required.");
   }
 
   if (effectivePassengerId !== user.id) {
@@ -147,16 +154,28 @@ export async function bookSeat(tripId, passengerId, seatsRequested = 1) {
     throw new Error("Not enough available seats for this request.");
   }
 
-  const { data, error } = await supabase
+  const baseBookingPayload = {
+    trip_id: tripId,
+    passenger_id: effectivePassengerId,
+    status: "pending",
+    seats_requested: requestedSeats,
+  };
+
+  const enhancedBookingPayload = {
+    ...baseBookingPayload,
+    passenger_phone: passengerPhone,
+    passenger_note: passengerNote || null,
+  };
+
+  let { data, error } = await supabase
     .from("bookings")
-    .insert({
-      trip_id: tripId,
-      passenger_id: effectivePassengerId,
-      status: "pending",
-      seats_requested: requestedSeats,
-    })
+    .insert(enhancedBookingPayload)
     .select()
     .single();
+
+  if (error && (error.code === "42703" || /column .* does not exist/i.test(error.message || ""))) {
+    ({ data, error } = await supabase.from("bookings").insert(baseBookingPayload).select().single());
+  }
 
   if (error) {
     if (error.code === "23505") {

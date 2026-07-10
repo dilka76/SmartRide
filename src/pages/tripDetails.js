@@ -96,6 +96,29 @@ function renderTripDetails(trip, user) {
                   .join("")}
               </select>
             </div>
+
+            <div class="mb-3">
+              <label for="bookingPhoneInput" class="form-label">Phone number <span class="text-danger">*</span></label>
+              <input
+                id="bookingPhoneInput"
+                type="tel"
+                class="form-control"
+                placeholder="e.g. +359 88 123 4567"
+                required
+                maxlength="40"
+              />
+            </div>
+
+            <div class="mb-3">
+              <label for="bookingNoteInput" class="form-label">Note (optional)</label>
+              <textarea
+                id="bookingNoteInput"
+                class="form-control"
+                rows="3"
+                maxlength="600"
+                placeholder="Pickup preference, luggage details, etc."
+              ></textarea>
+            </div>
           `
               : ""
           }
@@ -111,6 +134,8 @@ function renderTripDetails(trip, user) {
 
   const button = document.getElementById("bookSeatButton");
   const seatsSelect = document.getElementById("seatsRequestedSelect");
+  const bookingPhoneInput = document.getElementById("bookingPhoneInput");
+  const bookingNoteInput = document.getElementById("bookingNoteInput");
 
   if (!button) {
     return;
@@ -131,8 +156,20 @@ function renderTripDetails(trip, user) {
 
     try {
       const selectedSeats = seatsSelect instanceof HTMLSelectElement ? Number(seatsSelect.value) : 1;
+      const bookingPhone = bookingPhoneInput instanceof HTMLInputElement ? bookingPhoneInput.value.trim() : "";
+      const bookingNote = bookingNoteInput instanceof HTMLTextAreaElement ? bookingNoteInput.value.trim() : "";
 
-      await bookSeat(trip.id, user.id, selectedSeats);
+      if (!bookingPhone) {
+        showTripDetailsAlert("Phone number is required.");
+        button.disabled = false;
+        button.textContent = "Book a Seat";
+        return;
+      }
+
+      await bookSeat(trip.id, user.id, selectedSeats, {
+        passengerPhone: bookingPhone,
+        passengerNote: bookingNote,
+      });
       showTripDetailsAlert("Booking requested! Waiting for driver approval.", "success");
       button.textContent = "Request Sent";
     } catch (error) {
