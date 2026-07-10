@@ -163,7 +163,7 @@ function driverTripsSection(trips, currentUserId) {
               </div>
               <div class="text-end small text-muted">
                 <div>Seats: ${trip.available_seats}</div>
-                <div>Price: ${Number(trip.price).toFixed(2)} BGN</div>
+                <div>Price: ${Number(trip.price).toFixed(2)} EUR</div>
               </div>
             </div>
 

@@ -227,7 +227,7 @@ function tripCard(trip) {
         <div class="card-body d-flex flex-column">
           <h3 class="h5 card-title mb-2">${trip.from_city} → ${trip.to_city}</h3>
           <p class="card-text text-muted mb-2">${formatDateTime(trip.date_time)}</p>
-          <p class="card-text mb-2"><strong>Price:</strong> ${Number(trip.price).toFixed(2)} BGN</p>
+          <p class="card-text mb-2"><strong>Price:</strong> ${Number(trip.price).toFixed(2)} EUR</p>
           <p class="card-text mb-2"><strong>Available Seats:</strong> ${trip.available_seats}</p>
           <p class="card-text mb-4"><strong>Driver:</strong> ${driverName}</p>
           <a class="btn btn-outline-primary mt-auto" href="/trip-details.html?id=${trip.id}">View Details</a>

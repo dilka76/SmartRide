@@ -165,7 +165,7 @@ function renderTripsTable(trips) {
         <tr>
           <td>${escapeHtml(trip.from_city)} → ${escapeHtml(trip.to_city)}</td>
           <td>${formatDateTime(trip.date_time)}</td>
-          <td>${Number(trip.price).toFixed(2)} BGN</td>
+          <td>${Number(trip.price).toFixed(2)} EUR</td>
           <td>${trip.available_seats}</td>
           <td>${escapeHtml(trip.driver?.full_name || "Unknown")}</td>
           <td>

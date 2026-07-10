@@ -79,7 +79,7 @@ function renderTripDetails(trip, user) {
           <h1 class="h3 fw-semibold mb-3">${trip.from_city} → ${trip.to_city}</h1>
           <ul class="list-group list-group-flush border rounded-3 mb-4">
             <li class="list-group-item"><strong>Date & Time:</strong> ${formatDateTime(trip.date_time)}</li>
-            <li class="list-group-item"><strong>Price:</strong> ${Number(trip.price).toFixed(2)} BGN</li>
+            <li class="list-group-item"><strong>Price:</strong> ${Number(trip.price).toFixed(2)} EUR</li>
             <li class="list-group-item"><strong>Available Seats:</strong> ${trip.available_seats}</li>
             <li class="list-group-item"><strong>Driver:</strong> ${trip.driver?.full_name || "Unknown"}</li>
             <li class="list-group-item"><strong>Driver Phone:</strong> ${trip.driver?.phone || "Not shared"}</li>
