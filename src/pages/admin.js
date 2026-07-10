@@ -1,7 +1,8 @@
 import { getCurrentUser } from "../services/authService.js";
-import { adminDeleteTrip, adminUpdateTrip, getAllProfiles, getAllTrips } from "../services/tripService.js";
+import { adminDeleteTrip, adminUpdateTrip, getAllProfiles, getAllTrips, uploadCarPhoto } from "../services/tripService.js";
 
 const tripById = new Map();
+const PLACEHOLDER_IMAGE = "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1400&q=80";
 
 function formatDateTime(value) {
   const date = new Date(value);
@@ -230,9 +231,22 @@ function openTripEditModal(tripId) {
   const dateTimeInput = document.getElementById("editDateTime");
   const priceInput = document.getElementById("editPrice");
   const seatsInput = document.getElementById("editSeats");
+  const imageInput = document.getElementById("editCarPhoto");
+  const imagePreview = document.getElementById("editTripImagePreview");
   const tripIdInput = document.getElementById("editTripId");
 
-  if (!trip || !modalElement || !fromCityInput || !toCityInput || !dateTimeInput || !priceInput || !seatsInput || !tripIdInput) {
+  if (
+    !trip ||
+    !modalElement ||
+    !fromCityInput ||
+    !toCityInput ||
+    !dateTimeInput ||
+    !priceInput ||
+    !seatsInput ||
+    !imageInput ||
+    !imagePreview ||
+    !tripIdInput
+  ) {
     return;
   }
 
@@ -241,6 +255,8 @@ function openTripEditModal(tripId) {
   dateTimeInput.value = toDatetimeLocalValue(trip.date_time);
   priceInput.value = String(trip.price);
   seatsInput.value = String(trip.available_seats);
+  imageInput.value = "";
+  imagePreview.src = trip.car_photo_url || PLACEHOLDER_IMAGE;
   tripIdInput.value = trip.id;
 
   const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
@@ -260,6 +276,7 @@ function bindEditTripForm() {
     const formData = new FormData(form);
     const tripId = String(formData.get("trip_id") || "");
     const dateTimeValue = String(formData.get("date_time") || "");
+    const carPhotoFile = formData.get("car_photo");
 
     if (!tripId || !dateTimeValue) {
       showToast("Missing trip data for update.", "danger");
@@ -280,12 +297,19 @@ function bindEditTripForm() {
     }
 
     try {
+      const existingTrip = tripById.get(tripId);
+      const carPhotoUrl =
+        carPhotoFile instanceof File && carPhotoFile.size > 0
+          ? await uploadCarPhoto(carPhotoFile)
+          : (existingTrip?.car_photo_url ?? null);
+
       await adminUpdateTrip(tripId, {
         from_city: String(formData.get("from_city") || "").trim(),
         to_city: String(formData.get("to_city") || "").trim(),
         date_time: parsedDate.toISOString(),
         price: String(formData.get("price") || "0"),
         available_seats: String(formData.get("available_seats") || "0"),
+        car_photo_url: carPhotoUrl,
       });
 
       const modalElement = document.getElementById("editTripModal");
@@ -423,6 +447,20 @@ export function AdminPage() {
                 <div class="col-12 col-md-6">
                   <label for="editSeats" class="form-label">Available Seats</label>
                   <input id="editSeats" name="available_seats" type="number" class="form-control" min="0" step="1" required />
+                </div>
+                <div class="col-12">
+                  <label for="editCarPhoto" class="form-label">Vehicle Photo</label>
+                  <input id="editCarPhoto" name="car_photo" class="form-control" type="file" accept="image/png,image/jpeg,image/webp" />
+                  <div class="form-text">Leave empty to keep current image.</div>
+                </div>
+                <div class="col-12">
+                  <img
+                    id="editTripImagePreview"
+                    src="${PLACEHOLDER_IMAGE}"
+                    alt="Current trip vehicle"
+                    class="img-fluid rounded-3 border"
+                    style="max-height: 180px; object-fit: cover;"
+                  />
                 </div>
               </div>
             </div>

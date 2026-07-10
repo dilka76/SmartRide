@@ -173,7 +173,15 @@ export async function bookSeat(tripId, passengerId, seatsRequested = 1, bookingD
     .select()
     .single();
 
-  if (error && (error.code === "42703" || /column .* does not exist/i.test(error.message || ""))) {
+  const isMissingColumnError =
+    error &&
+    (error.code === "42703" ||
+      error.code === "PGRST204" ||
+      /column .* does not exist/i.test(error.message || "") ||
+      /schema cache/i.test(error.message || "") ||
+      /could not find .* column/i.test(error.message || ""));
+
+  if (isMissingColumnError) {
     ({ data, error } = await supabase.from("bookings").insert(baseBookingPayload).select().single());
   }
 
@@ -316,6 +324,10 @@ export async function adminUpdateTrip(tripId, updates) {
     price: Number(updates.price),
     available_seats: Number(updates.available_seats),
   };
+
+  if (Object.prototype.hasOwnProperty.call(updates, "car_photo_url")) {
+    payload.car_photo_url = updates.car_photo_url;
+  }
 
   const { error } = await supabase.from("trips").update(payload).eq("id", tripId);
 
