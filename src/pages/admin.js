@@ -1,8 +1,16 @@
 import { getCurrentUser } from "../services/authService.js";
-import { adminDeleteTrip, adminUpdateTrip, getAllProfiles, getAllTrips, uploadCarPhoto } from "../services/tripService.js";
+import {
+  adminDeleteTrip,
+  adminUpdateTrip,
+  getAllProfiles,
+  getAllTrips,
+  updateUserRole,
+  uploadCarPhoto,
+} from "../services/tripService.js";
 
 const tripById = new Map();
 const PLACEHOLDER_IMAGE = "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1400&q=80";
+let currentAdminUserId = null;
 
 function formatDateTime(value) {
   const date = new Date(value);
@@ -114,14 +122,33 @@ function renderUsersTable(profiles) {
 
   const rows = profiles
     .map(
-      (profile) => `
+      (profile) => {
+        const isCurrentAdmin = profile.id === currentAdminUserId;
+        const nextRole = profile.role === "admin" ? "user" : "admin";
+        const actionLabel = profile.role === "admin" ? "Make User" : "Make Admin";
+        const actionButton = isCurrentAdmin
+          ? '<span class="badge bg-info text-dark">Current Admin</span>'
+          : `
+            <button
+              class="btn btn-sm btn-outline-primary"
+              type="button"
+              data-role-user-id="${profile.id}"
+              data-role-next="${nextRole}"
+            >
+              ${actionLabel}
+            </button>
+          `;
+
+        return `
         <tr>
           <td>${escapeHtml(profile.full_name || "N/A")}</td>
           <td>${escapeHtml(profile.phone || "N/A")}</td>
           <td>${roleBadge(profile.role)}</td>
           <td>${formatDateTime(profile.created_at)}</td>
+          <td>${actionButton}</td>
         </tr>
-      `
+      `;
+      }
     )
     .join("");
 
@@ -134,6 +161,7 @@ function renderUsersTable(profiles) {
             <th>Phone</th>
             <th>Role</th>
             <th>Account Created At</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>
@@ -332,7 +360,48 @@ function bindEditTripForm() {
 }
 
 function bindAdminEvents() {
+  const usersHost = document.getElementById("adminUsersTableHost");
   const tripsHost = document.getElementById("adminTripsTableHost");
+
+  if (usersHost) {
+    usersHost.addEventListener("click", async (event) => {
+      const target = event.target;
+
+      if (!(target instanceof HTMLElement)) {
+        return;
+      }
+
+      const roleButton = target.closest("[data-role-user-id]");
+
+      if (!(roleButton instanceof HTMLButtonElement)) {
+        return;
+      }
+
+      const userId = roleButton.getAttribute("data-role-user-id");
+      const nextRole = roleButton.getAttribute("data-role-next");
+
+      if (!userId || (nextRole !== "admin" && nextRole !== "user")) {
+        return;
+      }
+
+      const confirmChange = window.confirm(`Change this user role to ${nextRole}?`);
+
+      if (!confirmChange) {
+        return;
+      }
+
+      roleButton.disabled = true;
+
+      try {
+        await updateUserRole(userId, nextRole);
+        await loadAdminData();
+        showToast(`User role updated to ${nextRole}.`, "success");
+      } catch (error) {
+        showToast(error.message || "Failed to update user role.", "danger");
+        roleButton.disabled = false;
+      }
+    });
+  }
 
   if (!tripsHost) {
     return;
@@ -487,6 +556,8 @@ export async function setupAdminPage() {
     showAccessDenied("Access denied. Admin role is required.");
     return;
   }
+
+  currentAdminUserId = user.id;
 
   try {
     await loadAdminData();

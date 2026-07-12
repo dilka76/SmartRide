@@ -300,6 +300,22 @@ export async function getAllProfiles() {
   return data || [];
 }
 
+export async function updateUserRole(userId, role) {
+  if (!userId) {
+    throw new Error("User ID is required.");
+  }
+
+  if (role !== "user" && role !== "admin") {
+    throw new Error("Invalid role.");
+  }
+
+  const { error } = await supabase.from("profiles").update({ role }).eq("id", userId);
+
+  if (error) {
+    throw error;
+  }
+}
+
 export async function adminDeleteTrip(tripId) {
   if (!tripId) {
     throw new Error("Trip ID is required.");
