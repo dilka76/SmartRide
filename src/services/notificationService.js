@@ -205,9 +205,9 @@ function showAdminNewBookingModal(bookings) {
               <div class="fw-semibold">${passenger}</div>
               <div class="text-muted small">${route}</div>
             </div>
-            <span class="badge rounded-pill bg-warning text-dark">Pending</span>
+            <span class="badge rounded-pill bg-warning text-dark">Очаквано</span>
           </div>
-          <div class="small text-muted mt-2">Seats requested: ${booking.seats_requested || 1}</div>
+          <div class="small text-muted mt-2">Места резервирани: ${booking.seats_requested || 1}</div>
         </div>
       `;
     })
@@ -330,11 +330,11 @@ function showAdminNewTripModal(trips) {
           <div class="d-flex justify-content-between align-items-start gap-3">
             <div>
               <div class="fw-semibold">${route}</div>
-              <div class="text-muted small">Driver: ${driver}</div>
+              <div class="text-muted small">Шофьор: ${driver}</div>
             </div>
-            <span class="badge rounded-pill bg-warning text-dark">Pending</span>
+            <span class="badge rounded-pill bg-warning text-dark">Очаквано</span>
           </div>
-          <div class="small text-muted mt-2">Seats: ${trip.available_seats || 0} | Price: ${Number(trip.price || 0).toFixed(2)} EUR</div>
+          <div class="small text-muted mt-2">Места: ${trip.available_seats || 0} | Цена: ${Number(trip.price || 0).toFixed(2)} EUR</div>
         </div>
       `;
     })

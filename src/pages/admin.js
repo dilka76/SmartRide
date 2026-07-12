@@ -50,22 +50,22 @@ function escapeHtml(value) {
 
 function roleBadge(role) {
   if (role === "admin") {
-    return '<span class="badge bg-dark">admin</span>';
+    return '<span class="badge bg-dark">администратор</span>';
   }
 
-  return '<span class="badge bg-secondary">user</span>';
+  return '<span class="badge bg-secondary">потребител</span>';
 }
 
 function tripModerationBadge(status) {
   if (status === "approved") {
-    return '<span class="badge bg-success">approved</span>';
+    return '<span class="badge bg-success">одобрено</span>';
   }
 
   if (status === "rejected") {
-    return '<span class="badge bg-danger">rejected</span>';
+    return '<span class="badge bg-danger">отхвърлено</span>';
   }
 
-  return '<span class="badge bg-warning text-dark">pending</span>';
+  return '<span class="badge bg-warning text-dark">очаквано</span>';
 }
 
 function showAccessDenied(message) {
@@ -77,7 +77,7 @@ function showAccessDenied(message) {
 
   host.innerHTML = `
     <div class="alert alert-danger" role="alert">
-      ${escapeHtml(message)} Redirecting to home page...
+      ${escapeHtml(message)} Пренасочване на начална страница...
     </div>
   `;
 
@@ -247,7 +247,7 @@ function renderTripsTable(trips) {
         <thead>
           <tr>
             <th>Route</th>
-            <th>Date & Time</th>
+            <th>Дата и час</th>
             <th>Price</th>
             <th>Seats</th>
             <th>Status</th>
@@ -460,7 +460,7 @@ function bindAdminEvents() {
         await loadAdminData();
         showToast(`Trip marked as ${status}.`, "success");
       } catch (error) {
-        showToast(error.message || "Failed to moderate trip.", "danger");
+        showToast(error.message || "Неуспешна модерация на пътуването.", "danger");
         moderateButton.disabled = false;
       }
 
@@ -604,7 +604,7 @@ export async function setupAdminPage() {
   }
 
   if (profile?.role !== "admin") {
-    showAccessDenied("Access denied. Admin role is required.");
+    showAccessDenied("Достъп отказан. Трябва администраторска роля.");
     return;
   }
 

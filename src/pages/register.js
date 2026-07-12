@@ -6,11 +6,11 @@ export function RegisterPage() {
       <div class="row justify-content-center">
         <div class="col-12 col-md-8 col-lg-5">
           <div class="p-5 bg-white border rounded-4 shadow-sm">
-            <h1 class="h3 fw-semibold mb-3">Register</h1>
+            <h1 class="h3 fw-semibold mb-3">Регистрация</h1>
             <div id="registerAlert"></div>
             <form id="registerForm" novalidate>
               <div class="mb-3">
-                <label for="registerFullName" class="form-label">Full Name</label>
+                <label for="registerFullName" class="form-label">Пълно име</label>
                 <input id="registerFullName" name="fullName" type="text" class="form-control" placeholder="Jane Doe" required />
               </div>
               <div class="mb-3">
@@ -18,11 +18,11 @@ export function RegisterPage() {
                 <input id="registerPhone" name="phone" type="tel" class="form-control" placeholder="+359..." />
               </div>
               <div class="mb-3">
-                <label for="registerEmail" class="form-label">Email</label>
+                <label for="registerEmail" class="form-label">Имейл</label>
                 <input id="registerEmail" name="email" type="email" class="form-control" placeholder="you@example.com" required />
               </div>
               <div class="mb-4">
-                <label for="registerPassword" class="form-label">Password</label>
+                <label for="registerPassword" class="form-label">Пароля</label>
                 <input id="registerPassword" name="password" type="password" class="form-control" minlength="6" required />
               </div>
               <button id="registerSubmit" type="submit" class="btn btn-success w-100">Create Account</button>
@@ -74,7 +74,7 @@ export function setupRegisterPage() {
 
     try {
       await signUp(email, password, fullName, phone);
-      showRegisterAlert("Registration successful. Redirecting to login...", "success");
+      showRegisterAlert("Регистрация успешна. Пренасочване към вход...", "success");
       setTimeout(() => {
         window.location.href = "/login.html";
       }, 800);

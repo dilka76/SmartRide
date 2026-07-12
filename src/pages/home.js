@@ -64,7 +64,7 @@ function formatDateTime(value) {
   const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) {
-    return "Date not available";
+    return "Дата не е налична";
   }
 
   return new Intl.DateTimeFormat("en-GB", {
@@ -107,7 +107,7 @@ function renderUserBookings(bookings) {
   userBookingsById.clear();
 
   if (!bookings.length) {
-    host.innerHTML = '<div class="alert alert-secondary mb-0">You do not have active travel bookings yet.</div>';
+    host.innerHTML = '<div class="alert alert-secondary mb-0">Все още няма активни пътни резервации.</div>';
     return;
   }
 
@@ -130,7 +130,7 @@ function renderUserBookings(bookings) {
             </button>
             <button class="btn btn-sm btn-outline-danger" type="button" data-delete-booking-id="${booking.id}">
               <i class="bi bi-trash3"></i>
-              Delete
+              Изтриване
             </button>
           </td>
         </tr>
@@ -143,14 +143,14 @@ function renderUserBookings(bookings) {
       <table class="table align-middle mb-0">
         <thead>
           <tr>
-            <th>Route</th>
-            <th>Date & Time</th>
-            <th>Driver</th>
-            <th>Phone</th>
-            <th>Note</th>
-            <th>Seats</th>
-            <th>Status</th>
-            <th>Action</th>
+            <th>Маршрут</th>
+            <th>Дата и час</th>
+            <th>Шофьор</th>
+            <th>Телефон</th>
+            <th>Бележка</th>
+            <th>Места</th>
+            <th>Статус</th>
+            <th>Действие</th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>
@@ -179,7 +179,7 @@ function renderAdminPendingBookings(bookings) {
   }
 
   if (!bookings.length) {
-    host.innerHTML = '<div class="alert alert-secondary mb-0">No booking requests found.</div>';
+    host.innerHTML = '<div class="alert alert-secondary mb-0">Няма намерени заявки за резервация.</div>';
     return;
   }
 
@@ -194,10 +194,10 @@ function renderAdminPendingBookings(bookings) {
           ? `
             <div class="d-flex gap-2">
               <button class="btn btn-sm btn-success" type="button" data-admin-booking-action="approved" data-booking-id="${booking.id}" data-trip-id="${booking.trip_id}">
-                Approve
+                Одобри
               </button>
               <button class="btn btn-sm btn-danger" type="button" data-admin-booking-action="rejected" data-booking-id="${booking.id}" data-trip-id="${booking.trip_id}">
-                Reject
+                Отхвърли
               </button>
             </div>
           `
@@ -230,14 +230,14 @@ function renderAdminPendingBookings(bookings) {
       <table class="table align-middle mb-0">
         <thead>
           <tr>
-            <th>Route</th>
-            <th>Date & Time</th>
-            <th>Passenger</th>
-            <th>Phone</th>
-            <th>Note</th>
-            <th>Seats</th>
-            <th>Status</th>
-            <th>Actions</th>
+            <th>Маршрут</th>
+            <th>Дата и час</th>
+            <th>Пътник</th>
+            <th>Телефон</th>
+            <th>Бележка</th>
+            <th>Места</th>
+            <th>Статус</th>
+            <th>Действия</th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>
@@ -264,7 +264,7 @@ function renderAdminPendingTrips(trips) {
   }
 
   if (!trips.length) {
-    host.innerHTML = '<div class="alert alert-secondary mb-0">No trips waiting for moderation.</div>';
+    host.innerHTML = '<div class="alert alert-secondary mb-0">Няма пътувания, които очакват модерация.</div>';
     return;
   }
 
@@ -280,8 +280,8 @@ function renderAdminPendingTrips(trips) {
           <td>${tripModerationBadge(trip.moderation_status)}</td>
           <td>
             <div class="d-flex gap-2">
-              <button class="btn btn-sm btn-success" type="button" data-admin-trip-action="approved" data-trip-id="${trip.id}">Approve</button>
-              <button class="btn btn-sm btn-danger" type="button" data-admin-trip-action="rejected" data-trip-id="${trip.id}">Reject</button>
+              <button class="btn btn-sm btn-success" type="button" data-admin-trip-action="approved" data-trip-id="${trip.id}">Одобри</button>
+              <button class="btn btn-sm btn-danger" type="button" data-admin-trip-action="rejected" data-trip-id="${trip.id}">Отхвърли</button>
             </div>
           </td>
         </tr>
@@ -294,13 +294,13 @@ function renderAdminPendingTrips(trips) {
       <table class="table align-middle mb-0">
         <thead>
           <tr>
-            <th>Route</th>
-            <th>Date & Time</th>
-            <th>Driver</th>
-            <th>Price</th>
-            <th>Seats</th>
-            <th>Status</th>
-            <th>Actions</th>
+            <th>Маршрут</th>
+            <th>Дата и час</th>
+            <th>Шофьор</th>
+            <th>Цена</th>
+            <th>Места</th>
+            <th>Статус</th>
+            <th>Действия</th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>
@@ -479,7 +479,7 @@ function bindBookingEditForm(loadContext) {
     const saveButton = document.getElementById("saveBookingChangesButton");
 
     if (!bookingId) {
-      showBookingEditAlert("Missing booking id.");
+      showBookingEditAlert("Липсва ID на резервацията.");
       return;
     }
 
@@ -489,7 +489,7 @@ function bindBookingEditForm(loadContext) {
     }
 
     if (!phone) {
-      showBookingEditAlert("Phone number is required.");
+      showBookingEditAlert("Телефонният номер е задължителен.");
       return;
     }
 
@@ -516,7 +516,7 @@ function bindBookingEditForm(loadContext) {
         modal.hide();
       }
     } catch (error) {
-      showBookingEditAlert(error.message || "Failed to update booking details.");
+      showBookingEditAlert(error.message || "Неуспешно обновяване на детайлите на резервацията.");
     } finally {
       if (saveButton instanceof HTMLButtonElement) {
         saveButton.disabled = false;
@@ -558,7 +558,7 @@ async function loadUserPendingTrips(user, isAdmin) {
   }
 
   wrapper.classList.remove("d-none");
-  host.innerHTML = '<div class="text-muted">Loading your pending trips...</div>';
+  host.innerHTML = '<div class="text-muted">Зареждане на вашите очаквани пътувания...</div>';
 
   try {
     const trips = await getAllTrips({}, { includeAll: true });
@@ -590,13 +590,13 @@ async function loadAdminPendingTrips(isAdmin) {
   }
 
   wrapper.classList.remove("d-none");
-  host.innerHTML = '<div class="text-muted">Loading pending trips...</div>';
+  host.innerHTML = '<div class="text-muted">Зареждане на очаващите пътувания...</div>';
 
   try {
     const trips = await getAllPendingTrips();
     renderAdminPendingTrips(trips);
   } catch (error) {
-    showAdminPendingTripsError(error.message || "Failed to load pending trips.");
+    showAdminPendingTripsError(error.message || "Неуспешно зареждане на очаващите пътувания.");
   }
 }
 
@@ -614,13 +614,13 @@ async function loadAdminPendingBookings(isAdmin) {
   }
 
   wrapper.classList.remove("d-none");
-  host.innerHTML = '<div class="text-muted">Loading booking requests...</div>';
+  host.innerHTML = '<div class="text-muted">Зареждане на заявките за резервация...</div>';
 
   try {
     const bookings = await getAllAdminBookings();
     renderAdminPendingBookings(bookings);
   } catch (error) {
-    showAdminPendingBookingsError(error.message || "Failed to load pending booking requests.");
+    showAdminPendingBookingsError(error.message || "Неуспешно зареждане на очаващите заявки.");
   }
 }
 
@@ -641,7 +641,7 @@ async function loadUserBookings() {
     }
 
     wrapper.classList.remove("d-none");
-    host.innerHTML = '<div class="text-muted">Loading your travel bookings...</div>';
+    host.innerHTML = '<div class="text-muted">Зареждане на вашите пътни резервации...</div>';
 
     const bookings = await getUserBookings(user.id);
     const activeBookings = bookings.filter((booking) => booking.status === "approved" || booking.status === "pending");
@@ -654,7 +654,7 @@ async function loadUserBookings() {
 
     renderUserBookings(activeBookings);
   } catch (error) {
-    showBookingsError(error.message || "Failed to load your bookings.");
+    showBookingsError(error.message || "Неуспешно зареждане на вашите резервации.");
   }
 }
 function tripCard(trip) {
@@ -668,7 +668,7 @@ function tripCard(trip) {
         <div class="card-body d-flex flex-column">
           <h3 class="h5 card-title mb-2">${trip.from_city} → ${trip.to_city}</h3>
           <p class="card-text text-muted mb-2">${formatDateTime(trip.date_time)}</p>
-          <p class="card-text mb-2"><strong>Price:</strong> ${Number(trip.price).toFixed(2)} EUR</p>
+          <p class="card-text mb-2"><strong>Цена:</strong> ${Number(trip.price).toFixed(2)} EUR</p>
           <p class="card-text mb-2"><strong>Available Seats:</strong> ${trip.available_seats}</p>
           <p class="card-text mb-4"><strong>Driver:</strong> ${driverName}</p>
           <a class="btn btn-outline-primary mt-auto" href="/trip-details.html?id=${trip.id}">View Details</a>
@@ -688,7 +688,7 @@ function showTripsLoading() {
   container.innerHTML = `
     <div class="col-12 text-center py-5">
       <div class="spinner-border text-primary" role="status" aria-hidden="true"></div>
-      <p class="mt-3 mb-0 text-muted">Loading trips...</p>
+      <p class="mt-3 mb-0 text-muted">Зареждане на пътувания...</p>
     </div>
   `;
 }
@@ -766,15 +766,15 @@ export function HomePage() {
 
               <form id="tripSearchForm" class="row g-3 align-items-end mt-2" novalidate>
                 <div class="col-12 col-md-5">
-                  <label for="searchFromCity" class="form-label">From City</label>
-                  <input id="searchFromCity" name="from_city" type="text" class="form-control" placeholder="Sofia" />
+                  <label for="searchFromCity" class="form-label">От град</label>
+                  <input id="searchFromCity" name="from_city" type="text" class="form-control" placeholder="София" />
                 </div>
                 <div class="col-12 col-md-5">
-                  <label for="searchToCity" class="form-label">To City</label>
-                  <input id="searchToCity" name="to_city" type="text" class="form-control" placeholder="Plovdiv" />
+                  <label for="searchToCity" class="form-label">До град</label>
+                  <input id="searchToCity" name="to_city" type="text" class="form-control" placeholder="Пловдив" />
                 </div>
                 <div class="col-12 col-md-2 d-grid">
-                  <button type="submit" class="btn btn-primary">Search</button>
+                  <button type="submit" class="btn btn-primary">Търсене</button>
                 </div>
               </form>
             </div>
@@ -789,8 +789,8 @@ export function HomePage() {
         <div id="myBookingsSection" class="card border-0 shadow-sm mb-4 d-none">
           <div class="card-body">
             <div class="d-flex justify-content-between align-items-center mb-3">
-              <h2 class="h5 mb-0">My Travel Bookings</h2>
-              <span class="small text-muted">Active: Approved / Pending</span>
+              <h2 class="h5 mb-0">Моите пътни резервации</h2>
+              <span class="small text-muted">Активни: Одобрени / Очаквани</span>
             </div>
             <div id="myBookingsHost"></div>
           </div>
@@ -799,10 +799,10 @@ export function HomePage() {
         <div id="myPendingTripsSection" class="card border-0 shadow-sm mb-4 d-none">
           <div class="card-body">
             <div class="d-flex justify-content-between align-items-center mb-3">
-              <h2 class="h5 mb-0">My Pending Trips</h2>
+              <h2 class="h5 mb-0">Моите очаквани пътувания</h2>
               <div class="d-flex align-items-center gap-2">
-                <span class="small text-muted">Waiting for administrator approval</span>
-                <a href="/profile.html#driver-pane" class="btn btn-sm btn-outline-primary">Open My Trips & Requests</a>
+                <span class="small text-muted">Очакване на одобрение на администратор</span>
+                <a href="/profile.html#driver-pane" class="btn btn-sm btn-outline-primary">Отворете моите пътувания и заявки</a>
               </div>
             </div>
             <div id="myPendingTripsHost"></div>
@@ -812,8 +812,8 @@ export function HomePage() {
         <div id="adminPendingTripsSection" class="card border-0 shadow-sm mb-4 d-none">
           <div class="card-body">
             <div class="d-flex justify-content-between align-items-center mb-3">
-              <h2 class="h5 mb-0">Pending Trip Approvals</h2>
-              <span class="small text-muted">Admin moderation queue for newly created trips</span>
+              <h2 class="h5 mb-0">Очаквани одобрения на пътувания</h2>
+              <span class="small text-muted">Администраторски модерационен ред за новосъздадени пътувания</span>
             </div>
             <div id="adminPendingTripsHost"></div>
           </div>
@@ -822,15 +822,15 @@ export function HomePage() {
         <div id="adminPendingBookingsSection" class="card border-0 shadow-sm mb-4 d-none">
           <div class="card-body">
             <div class="d-flex justify-content-between align-items-center mb-3">
-              <h2 class="h5 mb-0">Booking Requests Feed</h2>
-              <span class="small text-muted">Admin overview of all requests and decisions</span>
+              <h2 class="h5 mb-0">Лента на заявките за резервация</h2>
+              <span class="small text-muted">Администраторски преглед на всички заявки и решения</span>
             </div>
             <div id="adminPendingBookingsHost"></div>
           </div>
         </div>
 
         <div class="d-flex justify-content-between align-items-center mb-3">
-          <h2 class="h4 mb-0">Available Smart Routes</h2>
+          <h2 class="h4 mb-0">Налични разумни маршрути</h2>
         </div>
         <div id="tripsGrid" class="row g-4"></div>
       </section>
@@ -851,39 +851,39 @@ export function HomePage() {
               <div id="bookingEditAlert" class="mb-3"></div>
               <div class="row g-3">
                 <div class="col-12">
-                  <label for="editBookingRoute" class="form-label">Route</label>
+                  <label for="editBookingRoute" class="form-label">Маршрут</label>
                   <input id="editBookingRoute" type="text" class="form-control" readonly />
                 </div>
                 <div class="col-12 col-md-6">
-                  <label for="editBookingDateTime" class="form-label">Date & Time</label>
+                  <label for="editBookingDateTime" class="form-label">Дата и час</label>
                   <input id="editBookingDateTime" type="text" class="form-control" readonly />
                 </div>
                 <div class="col-12 col-md-6">
-                  <label for="editBookingDriver" class="form-label">Driver</label>
+                  <label for="editBookingDriver" class="form-label">Шофьор</label>
                   <input id="editBookingDriver" type="text" class="form-control" readonly />
                 </div>
                 <div class="col-12 col-md-6">
-                  <label for="editBookingSeats" class="form-label">Seats</label>
+                  <label for="editBookingSeats" class="form-label">Места</label>
                   <input id="editBookingSeats" type="text" class="form-control" readonly />
                 </div>
                 <div class="col-12 col-md-6">
-                  <label for="editBookingStatus" class="form-label">Status</label>
+                  <label for="editBookingStatus" class="form-label">Статус</label>
                   <input id="editBookingStatus" type="text" class="form-control" readonly />
                 </div>
                 <div class="col-12">
-                  <label for="editBookingPhone" class="form-label">Phone</label>
+                  <label for="editBookingPhone" class="form-label">Телефон</label>
                   <input id="editBookingPhone" name="passenger_phone" type="text" class="form-control" maxlength="40" required />
                 </div>
                 <div class="col-12">
-                  <label for="editBookingNote" class="form-label">Note</label>
+                  <label for="editBookingNote" class="form-label">Бележка</label>
                   <textarea id="editBookingNote" name="passenger_note" class="form-control" rows="3" maxlength="600"></textarea>
                 </div>
                 <div class="col-12 d-none" id="bookingEditRestrictionMessage"></div>
               </div>
             </div>
             <div class="modal-footer">
-              <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-              <button type="submit" class="btn btn-primary" id="saveBookingChangesButton">Save Changes</button>
+              <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмяна</button>
+              <button type="submit" class="btn btn-primary" id="saveBookingChangesButton">Запази промените</button>
             </div>
           </form>
         </div>
@@ -966,7 +966,7 @@ export function setupHomePage() {
         return;
       }
 
-      const confirmDelete = window.confirm("Delete this travel booking?");
+      const confirmDelete = window.confirm("Изтриване на тази пътна резервация?");
 
       if (!confirmDelete) {
         return;
@@ -978,7 +978,7 @@ export function setupHomePage() {
         await deleteBooking(bookingId);
         await loadUserBookings();
       } catch (error) {
-        showBookingsError(error.message || "Failed to delete booking.");
+        showBookingsError(error.message || "Неуспешно изтриване на резервацията.");
         button.disabled = false;
       }
     });
@@ -1026,7 +1026,7 @@ export function setupHomePage() {
         await updateBookingStatus(bookingId, tripId, action);
         await Promise.all([loadAdminPendingBookings(true), loadTrips({}, true)]);
       } catch (error) {
-        showAdminPendingBookingsError(error.message || "Failed to update booking request.");
+        showAdminPendingBookingsError(error.message || "Неуспешно обновяване на заявката за резервация.");
         button.disabled = false;
       }
     });
@@ -1059,7 +1059,7 @@ export function setupHomePage() {
         await adminModerateTrip(tripId, action);
         await Promise.all([loadAdminPendingTrips(true), loadTrips({}, true)]);
       } catch (error) {
-        showAdminPendingTripsError(error.message || "Failed to update trip moderation status.");
+        showAdminPendingTripsError(error.message || "Неуспешно обновяване на статуса на модерацията на пътуването.");
         button.disabled = false;
       }
     });

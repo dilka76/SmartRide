@@ -14,24 +14,24 @@ export function DashboardPage() {
       <div class="row justify-content-center">
         <div class="col-12 col-md-8 col-lg-6">
           <div class="p-5 bg-white border rounded-4 shadow-sm">
-            <h1 class="h3 fw-semibold mb-3">Dashboard</h1>
-            <p class="text-muted">${dashboardId ? `Dashboard ID: ${dashboardId}` : "Manage your trips and uploads."}</p>
+            <h1 class="h3 fw-semibold mb-3">Управление</h1>
+            <p class="text-muted">${dashboardId ? `ID на управление: ${dashboardId}` : "Управлявайте вашите пътувания и качвания."}</p>
 
             <hr class="my-4" />
 
-            <h2 class="h5 mb-3">Upload Car Photo</h2>
+            <h2 class="h5 mb-3">Качване на снимка на автомобил</h2>
             <div id="dashboardAlert"></div>
             <form id="carPhotoUploadForm" novalidate>
               <div class="mb-3">
-                <label for="carPhotoInput" class="form-label">Photo</label>
+                <label for="carPhotoInput" class="form-label">Снимка</label>
                 <input id="carPhotoInput" name="carPhoto" class="form-control" type="file" accept="image/png,image/jpeg,image/webp" required />
-                <div class="form-text">Allowed: JPG, PNG, WEBP. Max size configured in bucket settings.</div>
+                <div class="form-text">Разрешено: JPG, PNG, WEBP. Максимален размер конфигуриран в хранилището.</div>
               </div>
-              <button id="carPhotoSubmit" type="submit" class="btn btn-primary">Upload Photo</button>
+              <button id="carPhotoSubmit" type="submit" class="btn btn-primary">Качване на снимка</button>
             </form>
 
             <div id="carPhotoResult" class="mt-4 d-none">
-              <p class="mb-2 fw-semibold">Uploaded image:</p>
+              <p class="mb-2 fw-semibold">Качена снимка:</p>
               <img id="carPhotoPreview" class="img-fluid rounded border" alt="Uploaded car photo preview" />
               <p class="small text-break mt-2 mb-0" id="carPhotoUrl"></p>
             </div>
@@ -73,12 +73,12 @@ export function setupDashboardPage() {
     const file = fileInput.files?.[0];
 
     if (!file) {
-      showDashboardAlert("Please choose an image before uploading.");
+      showDashboardAlert("Моля, изберете изображение преди качване.");
       return;
     }
 
     submitButton.disabled = true;
-    submitButton.textContent = "Uploading...";
+    submitButton.textContent = "Качване...";
 
     try {
       const { user } = await getCurrentUser();
@@ -104,7 +104,7 @@ export function setupDashboardPage() {
       showDashboardAlert(error.message || "Upload failed. Please try again.");
     } finally {
       submitButton.disabled = false;
-      submitButton.textContent = "Upload Photo";
+      submitButton.textContent = "Качване на снимка";
     }
   });
 }

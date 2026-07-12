@@ -19,33 +19,33 @@ export function CreateTripPage() {
             <form id="createTripForm" novalidate>
               <div class="row g-3">
                 <div class="col-12 col-md-6">
-                  <label for="fromCity" class="form-label">From City</label>
-                  <input id="fromCity" name="from_city" type="text" class="form-control" placeholder="Sofia" required />
+                  <label for="fromCity" class="form-label">От град</label>
+                  <input id="fromCity" name="from_city" type="text" class="form-control" placeholder="София" required />
                 </div>
                 <div class="col-12 col-md-6">
-                  <label for="toCity" class="form-label">To City</label>
-                  <input id="toCity" name="to_city" type="text" class="form-control" placeholder="Plovdiv" required />
+                  <label for="toCity" class="form-label">До град</label>
+                  <input id="toCity" name="to_city" type="text" class="form-control" placeholder="Пловдив" required />
                 </div>
                 <div class="col-12 col-md-6">
-                  <label for="tripDateTime" class="form-label">Date & Time</label>
+                  <label for="tripDateTime" class="form-label">Дата и час</label>
                   <input id="tripDateTime" name="date_time" type="datetime-local" class="form-control" required />
                 </div>
                 <div class="col-12 col-md-3">
-                  <label for="tripPrice" class="form-label">Price</label>
+                  <label for="tripPrice" class="form-label">Цена</label>
                   <input id="tripPrice" name="price" type="number" min="0" step="0.01" class="form-control" placeholder="25.00" required />
                 </div>
                 <div class="col-12 col-md-3">
-                  <label for="availableSeats" class="form-label">Available Seats</label>
+                  <label for="availableSeats" class="form-label">Налични места</label>
                   <input id="availableSeats" name="available_seats" type="number" min="1" step="1" class="form-control" placeholder="3" required />
                 </div>
                 <div class="col-12">
-                  <label for="carPhoto" class="form-label">Vehicle Photo</label>
+                  <label for="carPhoto" class="form-label">Снимка на автомобил</label>
                   <input id="carPhoto" name="car_photo" class="form-control" type="file" accept="image/png,image/jpeg,image/webp" />
                 </div>
               </div>
 
               <div class="d-flex justify-content-end mt-4">
-                <button id="createTripSubmit" type="submit" class="btn btn-primary px-4">Create Trip</button>
+                <button id="createTripSubmit" type="submit" class="btn btn-primary px-4">Създай пътуване</button>
               </div>
             </form>
           </div>
@@ -102,7 +102,7 @@ export async function setupCreateTripPage() {
     const carPhotoFile = formData.get("car_photo");
 
     submitButton.disabled = true;
-    submitButton.textContent = "Creating...";
+submitButton.textContent = "Създаване...";
 
     try {
       const carPhotoUrl = carPhotoFile instanceof File && carPhotoFile.size > 0 ? await uploadCarPhoto(carPhotoFile) : null;
@@ -116,13 +116,13 @@ export async function setupCreateTripPage() {
         car_photo_url: carPhotoUrl,
       });
 
-      showCreateTripAlert("Trip created and sent for admin approval. Redirecting...", "success");
+      showCreateTripAlert("Пътуването е създадено и изпратено за одобрение на админ. Пренасочване...", "success");
       window.location.href = "/";
     } catch (error) {
-      showCreateTripAlert(error.message || "Unable to create trip. Please try again.");
+      showCreateTripAlert(error.message || "Невъзможно създаване на пътуване. Моля, опитайте отново.");
     } finally {
       submitButton.disabled = false;
-      submitButton.textContent = "Create Trip";
+      submitButton.textContent = "Създай пътуване";
     }
   });
 }

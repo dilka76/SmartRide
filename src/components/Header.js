@@ -2,21 +2,21 @@ import { getCurrentUser, signOut } from "../services/authService.js";
 
 function loggedOutLinks() {
   return `
-    <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
-    <li class="nav-item"><a class="nav-link" href="/login.html">Login</a></li>
-    <li class="nav-item"><a class="nav-link" href="/register.html">Register</a></li>
+    <li class="nav-item"><a class="nav-link" href="/">Начало</a></li>
+    <li class="nav-item"><a class="nav-link" href="/login.html">Вход</a></li>
+    <li class="nav-item"><a class="nav-link" href="/register.html">Регистрация</a></li>
   `;
 }
 
 function loggedInLinks(isAdmin) {
   return `
-    <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
-    <li class="nav-item"><a class="nav-link" href="/create-trip.html">Create Trip</a></li>
-    <li class="nav-item"><a class="nav-link" href="/profile.html">Profile</a></li>
-    <li class="nav-item"><a class="nav-link" href="/dashboard.html">Dashboard</a></li>
-    ${isAdmin ? '<li class="nav-item"><a class="nav-link" href="/admin.html">Admin Panel</a></li>' : ""}
+    <li class="nav-item"><a class="nav-link" href="/">Начало</a></li>
+    <li class="nav-item"><a class="nav-link" href="/create-trip.html">Създай пътуване</a></li>
+    <li class="nav-item"><a class="nav-link" href="/profile.html">Профил</a></li>
+    <li class="nav-item"><a class="nav-link" href="/dashboard.html">Управление</a></li>
+    ${isAdmin ? '<li class="nav-item"><a class="nav-link" href="/admin.html">Администраторски панел</a></li>' : ""}
     <li class="nav-item">
-      <button id="logoutBtn" class="btn btn-outline-danger btn-sm ms-lg-2" type="button">Logout</button>
+      <button id="logoutBtn" class="btn btn-outline-danger btn-sm ms-lg-2" type="button">Изход</button>
     </li>
   `;
 }

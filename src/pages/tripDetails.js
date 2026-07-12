@@ -7,7 +7,7 @@ function formatDateTime(value) {
   const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) {
-    return "Date not available";
+    return "Дата не е налична";
   }
 
   return new Intl.DateTimeFormat("en-GB", {
@@ -57,12 +57,12 @@ function renderTripDetails(trip, user) {
   const canBook = isLoggedIn && !isDriver && trip.available_seats > 0;
   const disableButton = isDriver || trip.available_seats <= 0;
   const buttonLabel = !isLoggedIn
-    ? "Log in to Book"
+    ? "Влезте за резервация"
     : isDriver
-      ? "Your Trip"
+      ? "Вашето пътуване"
       : trip.available_seats > 0
-        ? "Book a Seat"
-        : "No Seats Left";
+        ? "Резервирайте място"
+        : "Няма останали места";
 
   container.innerHTML = `
     <div class="row g-4 align-items-stretch">
@@ -78,18 +78,18 @@ function renderTripDetails(trip, user) {
         <div class="h-100 d-flex flex-column">
           <h1 class="h3 fw-semibold mb-3">${trip.from_city} → ${trip.to_city}</h1>
           <ul class="list-group list-group-flush border rounded-3 mb-4">
-            <li class="list-group-item"><strong>Date & Time:</strong> ${formatDateTime(trip.date_time)}</li>
-            <li class="list-group-item"><strong>Price:</strong> ${Number(trip.price).toFixed(2)} EUR</li>
-            <li class="list-group-item"><strong>Available Seats:</strong> ${trip.available_seats}</li>
-            <li class="list-group-item"><strong>Driver:</strong> ${trip.driver?.full_name || "Unknown"}</li>
-            <li class="list-group-item"><strong>Driver Phone:</strong> ${trip.driver?.phone || "Not shared"}</li>
+            <li class="list-group-item"><strong>Дата и час:</strong> ${formatDateTime(trip.date_time)}</li>
+            <li class="list-group-item"><strong>Цена:</strong> ${Number(trip.price).toFixed(2)} EUR</li>
+            <li class="list-group-item"><strong>Налични места:</strong> ${trip.available_seats}</li>
+            <li class="list-group-item"><strong>Шофьор:</strong> ${trip.driver?.full_name || "Неизвестен"}</li>
+            <li class="list-group-item"><strong>Телефон на шофьор:</strong> ${trip.driver?.phone || "Не е споделен"}</li>
           </ul>
 
           ${
             canBook
               ? `
             <div class="mb-3">
-              <label for="seatsRequestedSelect" class="form-label">Seats to book</label>
+              <label for="seatsRequestedSelect" class="form-label">Места за резервация</label>
               <select id="seatsRequestedSelect" class="form-select">
                 ${Array.from({ length: trip.available_seats }, (_, index) => index + 1)
                   .map((count) => `<option value="${count}">${count}</option>`)
@@ -98,7 +98,7 @@ function renderTripDetails(trip, user) {
             </div>
 
             <div class="mb-3">
-              <label for="bookingPhoneInput" class="form-label">Phone number <span class="text-danger">*</span></label>
+              <label for="bookingPhoneInput" class="form-label">Телефон <span class="text-danger">*</span></label>
               <input
                 id="bookingPhoneInput"
                 type="tel"
@@ -110,13 +110,13 @@ function renderTripDetails(trip, user) {
             </div>
 
             <div class="mb-3">
-              <label for="bookingNoteInput" class="form-label">Note (optional)</label>
+              <label for="bookingNoteInput" class="form-label">Бележка (по избор)</label>
               <textarea
                 id="bookingNoteInput"
                 class="form-control"
                 rows="3"
                 maxlength="600"
-                placeholder="Pickup preference, luggage details, etc."
+                placeholder="Предпочитание за разтвор, детайли за багаж и т.н."
               ></textarea>
             </div>
           `
@@ -152,7 +152,7 @@ function renderTripDetails(trip, user) {
     }
 
     button.disabled = true;
-    button.textContent = "Sending request...";
+    button.textContent = "Изпращане на заявка...";
 
     try {
       const selectedSeats = seatsSelect instanceof HTMLSelectElement ? Number(seatsSelect.value) : 1;
@@ -160,9 +160,9 @@ function renderTripDetails(trip, user) {
       const bookingNote = bookingNoteInput instanceof HTMLTextAreaElement ? bookingNoteInput.value.trim() : "";
 
       if (!bookingPhone) {
-        showTripDetailsAlert("Phone number is required.");
+        showTripDetailsAlert("Телефонният номер е задължителен.");
         button.disabled = false;
-        button.textContent = "Book a Seat";
+        button.textContent = "Резервирайте място";
         return;
       }
 
@@ -198,7 +198,7 @@ export async function setupTripDetailsPage() {
   container.innerHTML = `
     <div class="text-center py-5">
       <div class="spinner-border text-primary" role="status" aria-hidden="true"></div>
-      <p class="mt-3 mb-0 text-muted">Loading trip details...</p>
+      <p class="mt-3 mb-0 text-muted">Зареждане на детайли на пътуване...</p>
     </div>
   `;
 
