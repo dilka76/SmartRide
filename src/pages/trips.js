@@ -1,6 +1,52 @@
 import { getAllTrips } from "../services/tripService.js";
+import carLottieAnimationPath from "../../Lottie/CarLottieAnimation.json?url";
 
 const PLACEHOLDER_IMAGE = "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1200&q=80";
+let tripsLottieInstance = null;
+let lottieLoaderPromise = null;
+
+async function initTripsLottie() {
+  const host = document.getElementById("tripsHeroLottie");
+
+  if (!host) {
+    return;
+  }
+
+  host.classList.remove("is-loaded");
+
+  if (tripsLottieInstance) {
+    tripsLottieInstance.destroy();
+    tripsLottieInstance = null;
+  }
+
+  try {
+    if (!lottieLoaderPromise) {
+      lottieLoaderPromise = import("lottie-web");
+    }
+
+    const { default: lottie } = await lottieLoaderPromise;
+
+    if (!document.body.contains(host)) {
+      return;
+    }
+
+    tripsLottieInstance = lottie.loadAnimation({
+      container: host,
+      renderer: "svg",
+      loop: true,
+      autoplay: true,
+      path: carLottieAnimationPath,
+    });
+
+    tripsLottieInstance.addEventListener("DOMLoaded", () => {
+      if (document.body.contains(host)) {
+        host.classList.add("is-loaded");
+      }
+    });
+  } catch (error) {
+    console.error("Failed to load trips animation:", error);
+  }
+}
 
 function formatDateTime(value) {
   const date = new Date(value);
@@ -131,13 +177,16 @@ export function TripsPage() {
     <main class="container py-5">
       <section class="card border-0 shadow-sm mb-4 overflow-hidden">
         <div class="card-body p-4 p-lg-5">
-          <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-end gap-3">
-            <div>
+          <div class="row g-4 align-items-center">
+            <div class="col-12 col-lg-7">
               <p class="text-uppercase small mb-2" style="letter-spacing: 0.12em;">SmartRide маршрути</p>
               <h1 class="h2 fw-semibold mb-2">Всички предстоящи пътувания</h1>
               <p class="text-muted mb-0">Разгледай всички налични маршрути, подредени по дата, и избери най-удобното пътуване за теб.</p>
             </div>
-            <div class="text-lg-end">
+            <div class="col-12 col-lg-5">
+              <div id="tripsHeroLottie" class="hero-lottie" aria-hidden="true"></div>
+            </div>
+            <div class="col-12 text-lg-end">
               <div id="tripsCount" class="small text-muted">Зареждане...</div>
             </div>
           </div>
@@ -171,6 +220,7 @@ export function TripsPage() {
 }
 
 export function setupTripsPage() {
+  void initTripsLottie();
   bindTripsFilters();
   loadTrips();
 }
