@@ -108,3 +108,50 @@ export async function getCurrentUser() {
 
   return { user, profile: profile ?? null };
 }
+
+export async function updateCurrentUserProfile(updates = {}) {
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError) {
+    throw userError;
+  }
+
+  if (!user) {
+    throw new Error("Трябва да сте влезли в профила си.");
+  }
+
+  const fullName = typeof updates.full_name === "string" ? updates.full_name.trim() : "";
+  const phone = typeof updates.phone === "string" ? updates.phone.trim() : "";
+  const avatarUrl = typeof updates.avatar_url === "string" ? updates.avatar_url.trim() : "";
+
+  if (!fullName) {
+    throw new Error("Името е задължително.");
+  }
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .update({
+      full_name: fullName,
+      phone: phone || null,
+      avatar_url: avatarUrl || null,
+    })
+    .eq("id", user.id)
+    .select("id, full_name, phone, avatar_url, role, created_at")
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  await supabase.auth.updateUser({
+    data: {
+      full_name: fullName,
+      phone: phone || null,
+    },
+  });
+
+  return data;
+}

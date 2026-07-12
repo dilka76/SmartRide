@@ -802,7 +802,7 @@ export function HomePage() {
               <h2 class="h5 mb-0">Моите очаквани пътувания</h2>
               <div class="d-flex align-items-center gap-2">
                 <span class="small text-muted">Очакване на одобрение на администратор</span>
-                <a href="/profile.html#driver-pane" class="btn btn-sm btn-outline-primary">Отворете моите пътувания и заявки</a>
+                <a href="/dashboard.html#driver-pane" class="btn btn-sm btn-outline-primary">Отворете моите пътувания и заявки</a>
               </div>
             </div>
             <div id="myPendingTripsHost"></div>

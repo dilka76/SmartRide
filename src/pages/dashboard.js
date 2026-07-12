@@ -1,4 +1,5 @@
 import { getCurrentUser } from "../services/authService.js";
+import { DashboardTabsSection, setupDashboardTabs } from "./dashboardTabs.js";
 import { uploadCarPhoto } from "../services/storageService.js";
 
 function getDashboardId() {
@@ -12,10 +13,10 @@ export function DashboardPage() {
   return `
     <main class="container py-5">
       <div class="row justify-content-center">
-        <div class="col-12 col-md-8 col-lg-6">
-          <div class="p-5 bg-white border rounded-4 shadow-sm">
+        <div class="col-12 col-xl-10">
+          <div class="p-4 p-lg-5 bg-white border rounded-4 shadow-sm">
             <h1 class="h3 fw-semibold mb-3">Управление</h1>
-            <p class="text-muted">${dashboardId ? `ID на управление: ${dashboardId}` : "Управлявайте вашите пътувания и качвания."}</p>
+            <p class="text-muted">${dashboardId ? `ID на управление: ${dashboardId}` : "Управлявайте своите качвания, резервации и шофьорски заявки на едно място."}</p>
 
             <hr class="my-4" />
 
@@ -32,9 +33,11 @@ export function DashboardPage() {
 
             <div id="carPhotoResult" class="mt-4 d-none">
               <p class="mb-2 fw-semibold">Качена снимка:</p>
-              <img id="carPhotoPreview" class="img-fluid rounded border" alt="Uploaded car photo preview" />
+              <img id="carPhotoPreview" class="img-fluid rounded border" alt="Преглед на качената снимка на автомобил" />
               <p class="small text-break mt-2 mb-0" id="carPhotoUrl"></p>
             </div>
+
+            ${DashboardTabsSection()}
           </div>
         </div>
       </div>
@@ -58,6 +61,22 @@ function showDashboardAlert(message, type = "danger") {
 }
 
 export function setupDashboardPage() {
+  const initialize = async () => {
+    const { user, profile } = await getCurrentUser();
+
+    if (!user) {
+      window.location.href = "/login.html";
+      return;
+    }
+
+    await setupDashboardTabs(user, profile);
+    bindUploadForm(user);
+  };
+
+  initialize();
+}
+
+function bindUploadForm(user) {
   const form = document.getElementById("carPhotoUploadForm");
   const fileInput = document.getElementById("carPhotoInput");
   const submitButton = document.getElementById("carPhotoSubmit");
@@ -81,12 +100,6 @@ export function setupDashboardPage() {
     submitButton.textContent = "Качване...";
 
     try {
-      const { user } = await getCurrentUser();
-
-      if (!user) {
-        throw new Error("Please sign in to upload car photos.");
-      }
-
       const result = await uploadCarPhoto(file, user.id);
       const resultBox = document.getElementById("carPhotoResult");
       const preview = document.getElementById("carPhotoPreview");
@@ -98,10 +111,10 @@ export function setupDashboardPage() {
         urlElement.textContent = result.publicUrl;
       }
 
-      showDashboardAlert("Photo uploaded successfully.", "success");
+      showDashboardAlert("Снимката беше качена успешно.", "success");
       form.reset();
     } catch (error) {
-      showDashboardAlert(error.message || "Upload failed. Please try again.");
+      showDashboardAlert(error.message || "Качването не бе успешно. Опитайте отново.");
     } finally {
       submitButton.disabled = false;
       submitButton.textContent = "Качване на снимка";
