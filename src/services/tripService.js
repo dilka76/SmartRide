@@ -21,6 +21,25 @@ async function requireUser() {
   return user;
 }
 
+function isMissingBookingContactColumnsError(error) {
+  return Boolean(
+    error &&
+      (error.code === "42703" ||
+        error.code === "PGRST204" ||
+        /column .* does not exist/i.test(error.message || "") ||
+        /schema cache/i.test(error.message || "") ||
+        /could not find .* column/i.test(error.message || ""))
+  );
+}
+
+function withBookingContactDefaults(rows) {
+  return (rows || []).map((row) => ({
+    ...row,
+    passenger_phone: row?.passenger_phone || null,
+    passenger_note: row?.passenger_note || null,
+  }));
+}
+
 export async function uploadCarPhoto(file) {
   if (!file) {
     return null;
@@ -76,7 +95,7 @@ export async function getAllTrips(filters = {}, options = {}) {
   let query = supabase
     .from("trips")
     .select(
-      "id, from_city, to_city, date_time, price, available_seats, moderation_status, car_photo_url, driver:profiles!trips_driver_id_fkey(full_name)"
+      "id, driver_id, from_city, to_city, date_time, price, available_seats, moderation_status, car_photo_url, driver:profiles!trips_driver_id_fkey(full_name)"
     )
     .order("date_time", { ascending: true });
 
@@ -190,13 +209,7 @@ export async function bookSeat(tripId, passengerId, seatsRequested = 1, bookingD
     .select()
     .single();
 
-  const isMissingColumnError =
-    error &&
-    (error.code === "42703" ||
-      error.code === "PGRST204" ||
-      /column .* does not exist/i.test(error.message || "") ||
-      /schema cache/i.test(error.message || "") ||
-      /could not find .* column/i.test(error.message || ""));
+  const isMissingColumnError = isMissingBookingContactColumnsError(error);
 
   if (isMissingColumnError) {
     ({ data, error } = await supabase.from("bookings").insert(baseBookingPayload).select().single());
@@ -218,19 +231,29 @@ export async function getUserBookings(userId) {
     throw new Error("User ID is required.");
   }
 
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from("bookings")
     .select(
-      "id, trip_id, status, seats_requested, created_at, trip:trips!bookings_trip_id_fkey(id, from_city, to_city, date_time, driver:profiles!trips_driver_id_fkey(full_name, phone))"
+      "id, trip_id, status, seats_requested, passenger_phone, passenger_note, created_at, trip:trips!bookings_trip_id_fkey(id, from_city, to_city, date_time, driver:profiles!trips_driver_id_fkey(full_name, phone))"
     )
     .eq("passenger_id", userId)
     .order("created_at", { ascending: false });
+
+  if (isMissingBookingContactColumnsError(error)) {
+    ({ data, error } = await supabase
+      .from("bookings")
+      .select(
+        "id, trip_id, status, seats_requested, created_at, trip:trips!bookings_trip_id_fkey(id, from_city, to_city, date_time, driver:profiles!trips_driver_id_fkey(full_name, phone))"
+      )
+      .eq("passenger_id", userId)
+      .order("created_at", { ascending: false }));
+  }
 
   if (error) {
     throw error;
   }
 
-  return data || [];
+  return withBookingContactDefaults(data);
 }
 
 export async function getDriverTripsWithBookings(driverId) {
@@ -272,34 +295,53 @@ export async function getDriverTrips(driverId) {
 }
 
 export async function getAllPendingBookings() {
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from("bookings")
     .select(
-      "id, trip_id, passenger_id, status, seats_requested, created_at, trip:trips!bookings_trip_id_fkey(id, from_city, to_city, date_time, driver:profiles!trips_driver_id_fkey(full_name)), passenger:profiles!bookings_passenger_id_fkey(full_name, phone)"
+      "id, trip_id, passenger_id, status, seats_requested, passenger_phone, passenger_note, created_at, trip:trips!bookings_trip_id_fkey(id, from_city, to_city, date_time, driver:profiles!trips_driver_id_fkey(full_name)), passenger:profiles!bookings_passenger_id_fkey(full_name, phone)"
     )
     .eq("status", "pending")
     .order("created_at", { ascending: false });
 
+  if (isMissingBookingContactColumnsError(error)) {
+    ({ data, error } = await supabase
+      .from("bookings")
+      .select(
+        "id, trip_id, passenger_id, status, seats_requested, created_at, trip:trips!bookings_trip_id_fkey(id, from_city, to_city, date_time, driver:profiles!trips_driver_id_fkey(full_name)), passenger:profiles!bookings_passenger_id_fkey(full_name, phone)"
+      )
+      .eq("status", "pending")
+      .order("created_at", { ascending: false }));
+  }
+
   if (error) {
     throw error;
   }
 
-  return data || [];
+  return withBookingContactDefaults(data);
 }
 
 export async function getAllAdminBookings() {
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from("bookings")
     .select(
-      "id, trip_id, passenger_id, status, seats_requested, created_at, trip:trips!bookings_trip_id_fkey(id, from_city, to_city, date_time, driver:profiles!trips_driver_id_fkey(full_name)), passenger:profiles!bookings_passenger_id_fkey(full_name, phone)"
+      "id, trip_id, passenger_id, status, seats_requested, passenger_phone, passenger_note, created_at, trip:trips!bookings_trip_id_fkey(id, from_city, to_city, date_time, driver:profiles!trips_driver_id_fkey(full_name)), passenger:profiles!bookings_passenger_id_fkey(full_name, phone)"
     )
     .order("created_at", { ascending: false });
+
+  if (isMissingBookingContactColumnsError(error)) {
+    ({ data, error } = await supabase
+      .from("bookings")
+      .select(
+        "id, trip_id, passenger_id, status, seats_requested, created_at, trip:trips!bookings_trip_id_fkey(id, from_city, to_city, date_time, driver:profiles!trips_driver_id_fkey(full_name)), passenger:profiles!bookings_passenger_id_fkey(full_name, phone)"
+      )
+      .order("created_at", { ascending: false }));
+  }
 
   if (error) {
     throw error;
   }
 
-  return data || [];
+  return withBookingContactDefaults(data);
 }
 
 export async function updateBookingStatus(bookingId, tripId, newStatus) {
@@ -399,6 +441,34 @@ export async function adminModerateTrip(tripId, status) {
   const { error } = await supabase.from("trips").update({ moderation_status: status }).eq("id", tripId);
 
   if (error) {
+    throw error;
+  }
+}
+
+export async function updateBookingContactDetails(bookingId, details = {}) {
+  if (!bookingId) {
+    throw new Error("Booking ID is required.");
+  }
+
+  const phone = typeof details.passenger_phone === "string" ? details.passenger_phone.trim() : "";
+  const note = typeof details.passenger_note === "string" ? details.passenger_note.trim() : "";
+
+  if (!phone) {
+    throw new Error("Phone number is required.");
+  }
+
+  const payload = {
+    passenger_phone: phone,
+    passenger_note: note || null,
+  };
+
+  const { error } = await supabase.from("bookings").update(payload).eq("id", bookingId);
+
+  if (error) {
+    if (isMissingBookingContactColumnsError(error)) {
+      throw new Error("Booking contact fields are not ready yet. Refresh in a few seconds.");
+    }
+
     throw error;
   }
 }

@@ -501,4 +501,12 @@ export async function setupProfilePage() {
   await renderProfileContent(user, profile);
   bindDriverActions(user, profile);
   bindAdminTripModerationActions(user, profile);
+
+  if (window.location.hash === "#driver-pane") {
+    const driverTab = document.getElementById("driver-tab");
+
+    if (driverTab && typeof bootstrap !== "undefined" && bootstrap.Tab) {
+      bootstrap.Tab.getOrCreateInstance(driverTab).show();
+    }
+  }
 }

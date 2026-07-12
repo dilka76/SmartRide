@@ -6,6 +6,7 @@ import {
   getAllPendingTrips,
   getAllTrips,
   getUserBookings,
+  updateBookingContactDetails,
   updateBookingStatus,
 } from "../services/tripService.js";
 import { setAdminNotificationRefreshCallback } from "../services/notificationService.js";
@@ -13,6 +14,8 @@ import { setAdminNotificationRefreshCallback } from "../services/notificationSer
 const PLACEHOLDER_IMAGE = "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1200&q=80";
 let heroLottieInstance = null;
 let lottieLoaderPromise = null;
+const userBookingsById = new Map();
+const adminBookingsById = new Map();
 
 async function initHeroLottie() {
   const host = document.getElementById("heroLottie");
@@ -101,6 +104,8 @@ function renderUserBookings(bookings) {
     return;
   }
 
+  userBookingsById.clear();
+
   if (!bookings.length) {
     host.innerHTML = '<div class="alert alert-secondary mb-0">You do not have active travel bookings yet.</div>';
     return;
@@ -108,15 +113,21 @@ function renderUserBookings(bookings) {
 
   const rows = bookings
     .map((booking) => {
+      userBookingsById.set(booking.id, booking);
       const trip = booking.trip;
       return `
         <tr>
           <td>${trip?.from_city || "-"} → ${trip?.to_city || "-"}</td>
           <td>${formatDateTime(trip?.date_time)}</td>
           <td>${trip?.driver?.full_name || "Unknown"}</td>
+          <td>${booking.passenger_phone || "N/A"}</td>
+          <td>${booking.passenger_note || "-"}</td>
           <td>${booking.seats_requested || 1}</td>
           <td>${bookingStatusBadge(booking.status)}</td>
           <td>
+            <button class="btn btn-sm btn-outline-primary me-2" type="button" data-edit-booking-id="${booking.id}" data-booking-source="user">
+              Edit
+            </button>
             <button class="btn btn-sm btn-outline-danger" type="button" data-delete-booking-id="${booking.id}">
               <i class="bi bi-trash3"></i>
               Delete
@@ -135,6 +146,8 @@ function renderUserBookings(bookings) {
             <th>Route</th>
             <th>Date & Time</th>
             <th>Driver</th>
+            <th>Phone</th>
+            <th>Note</th>
             <th>Seats</th>
             <th>Status</th>
             <th>Action</th>
@@ -159,6 +172,8 @@ function showBookingsError(message) {
 function renderAdminPendingBookings(bookings) {
   const host = document.getElementById("adminPendingBookingsHost");
 
+  adminBookingsById.clear();
+
   if (!host) {
     return;
   }
@@ -170,6 +185,7 @@ function renderAdminPendingBookings(bookings) {
 
   const rows = bookings
     .map((booking) => {
+      adminBookingsById.set(booking.id, booking);
       const trip = booking.trip;
       const passenger = booking.passenger;
 
@@ -192,10 +208,18 @@ function renderAdminPendingBookings(bookings) {
           <td>${trip?.from_city || "-"} → ${trip?.to_city || "-"}</td>
           <td>${formatDateTime(trip?.date_time)}</td>
           <td>${passenger?.full_name || "Unknown"}</td>
-          <td>${passenger?.phone || "N/A"}</td>
+          <td>${booking.passenger_phone || passenger?.phone || "N/A"}</td>
+          <td>${booking.passenger_note || "-"}</td>
           <td>${booking.seats_requested || 1}</td>
           <td>${bookingStatusBadge(booking.status)}</td>
-          <td>${actionButtons}</td>
+          <td>
+            <div class="d-flex gap-2 flex-wrap">
+              <button class="btn btn-sm btn-outline-primary" type="button" data-edit-booking-id="${booking.id}" data-booking-source="admin">
+                Edit
+              </button>
+              ${actionButtons}
+            </div>
+          </td>
         </tr>
       `;
     })
@@ -210,6 +234,7 @@ function renderAdminPendingBookings(bookings) {
             <th>Date & Time</th>
             <th>Passenger</th>
             <th>Phone</th>
+            <th>Note</th>
             <th>Seats</th>
             <th>Status</th>
             <th>Actions</th>
@@ -292,6 +317,263 @@ function showAdminPendingTripsError(message) {
   }
 
   host.innerHTML = `<div class="alert alert-danger mb-0">${message}</div>`;
+}
+
+function renderUserPendingTrips(trips) {
+  const host = document.getElementById("myPendingTripsHost");
+
+  if (!host) {
+    return;
+  }
+
+  if (!trips.length) {
+    host.innerHTML = '<div class="alert alert-secondary mb-0">No pending trips.</div>';
+    return;
+  }
+
+  const rows = trips
+    .map(
+      (trip) => `
+        <tr>
+          <td>${trip.from_city} → ${trip.to_city}</td>
+          <td>${formatDateTime(trip.date_time)}</td>
+          <td>${Number(trip.price).toFixed(2)} EUR</td>
+          <td>${trip.available_seats}</td>
+          <td>${tripModerationBadge(trip.moderation_status)}</td>
+        </tr>
+      `
+    )
+    .join("");
+
+  host.innerHTML = `
+    <div class="table-responsive">
+      <table class="table align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Route</th>
+            <th>Date & Time</th>
+            <th>Price</th>
+            <th>Seats</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+function showUserPendingTripsError(message) {
+  const host = document.getElementById("myPendingTripsHost");
+
+  if (!host) {
+    return;
+  }
+
+  host.innerHTML = `<div class="alert alert-danger mb-0">${message}</div>`;
+}
+
+function showBookingEditAlert(message, type = "danger") {
+  const host = document.getElementById("bookingEditAlert");
+
+  if (!host) {
+    return;
+  }
+
+  if (!message) {
+    host.innerHTML = "";
+    return;
+  }
+
+  host.innerHTML = `<div class="alert alert-${type} mb-0" role="alert">${message}</div>`;
+}
+
+function openBookingEditModal(bookingId, source) {
+  const booking = source === "admin" ? adminBookingsById.get(bookingId) : userBookingsById.get(bookingId);
+  const modalElement = document.getElementById("editBookingModal");
+
+  if (!booking || !modalElement) {
+    return;
+  }
+
+  const trip = booking.trip;
+  const routeInput = document.getElementById("editBookingRoute");
+  const dateTimeInput = document.getElementById("editBookingDateTime");
+  const driverInput = document.getElementById("editBookingDriver");
+  const seatsInput = document.getElementById("editBookingSeats");
+  const statusInput = document.getElementById("editBookingStatus");
+  const phoneInput = document.getElementById("editBookingPhone");
+  const noteInput = document.getElementById("editBookingNote");
+  const bookingIdInput = document.getElementById("editBookingId");
+  const sourceInput = document.getElementById("editBookingSource");
+  const statusRawInput = document.getElementById("editBookingStatusRaw");
+  const restrictionHost = document.getElementById("bookingEditRestrictionMessage");
+  const saveButton = document.getElementById("saveBookingChangesButton");
+
+  if (
+    !(routeInput instanceof HTMLInputElement) ||
+    !(dateTimeInput instanceof HTMLInputElement) ||
+    !(driverInput instanceof HTMLInputElement) ||
+    !(seatsInput instanceof HTMLInputElement) ||
+    !(statusInput instanceof HTMLInputElement) ||
+    !(phoneInput instanceof HTMLInputElement) ||
+    !(noteInput instanceof HTMLTextAreaElement) ||
+    !(bookingIdInput instanceof HTMLInputElement) ||
+    !(sourceInput instanceof HTMLInputElement) ||
+    !(statusRawInput instanceof HTMLInputElement)
+  ) {
+    return;
+  }
+
+  const isUserApprovedLock = source === "user" && booking.status === "approved";
+
+  showBookingEditAlert("");
+  if (restrictionHost) {
+    if (isUserApprovedLock) {
+      restrictionHost.innerHTML = '<div class="alert alert-warning mt-3 mb-0" role="alert">Вече не можете да редактирате своето пътуване! Моля, свържете се с администратор.</div>';
+      restrictionHost.classList.remove("d-none");
+    } else {
+      restrictionHost.innerHTML = "";
+      restrictionHost.classList.add("d-none");
+    }
+  }
+
+  routeInput.value = `${trip?.from_city || "-"} -> ${trip?.to_city || "-"}`;
+  dateTimeInput.value = formatDateTime(trip?.date_time);
+  driverInput.value = trip?.driver?.full_name || booking.passenger?.full_name || "Unknown";
+  seatsInput.value = String(booking.seats_requested || 1);
+  statusInput.value = booking.status || "pending";
+  phoneInput.value = booking.passenger_phone || booking.passenger?.phone || "";
+  noteInput.value = booking.passenger_note || "";
+  phoneInput.disabled = isUserApprovedLock;
+  noteInput.disabled = isUserApprovedLock;
+  bookingIdInput.value = booking.id;
+  sourceInput.value = source;
+  statusRawInput.value = booking.status || "pending";
+
+  if (saveButton instanceof HTMLButtonElement) {
+    saveButton.disabled = isUserApprovedLock;
+  }
+
+  const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+  modal.show();
+}
+
+function bindBookingEditForm(loadContext) {
+  const form = document.getElementById("editBookingForm");
+
+  if (!form) {
+    return;
+  }
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    showBookingEditAlert("");
+
+    const formData = new FormData(form);
+    const bookingId = String(formData.get("booking_id") || "");
+    const source = String(formData.get("source") || "user");
+    const bookingStatus = String(formData.get("booking_status") || "pending");
+    const phone = String(formData.get("passenger_phone") || "").trim();
+    const note = String(formData.get("passenger_note") || "").trim();
+    const saveButton = document.getElementById("saveBookingChangesButton");
+
+    if (!bookingId) {
+      showBookingEditAlert("Missing booking id.");
+      return;
+    }
+
+    if (source === "user" && bookingStatus === "approved") {
+      showBookingEditAlert("Вече не можете да редактирате своето пътуване! Моля, свържете се с администратор.", "warning");
+      return;
+    }
+
+    if (!phone) {
+      showBookingEditAlert("Phone number is required.");
+      return;
+    }
+
+    if (saveButton instanceof HTMLButtonElement) {
+      saveButton.disabled = true;
+    }
+
+    try {
+      await updateBookingContactDetails(bookingId, {
+        passenger_phone: phone,
+        passenger_note: note,
+      });
+
+      if (source === "admin") {
+        await loadContext.loadAdminPendingBookings(true);
+      } else {
+        await loadContext.loadUserBookings();
+      }
+
+      const modalElement = document.getElementById("editBookingModal");
+
+      if (modalElement) {
+        const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+        modal.hide();
+      }
+    } catch (error) {
+      showBookingEditAlert(error.message || "Failed to update booking details.");
+    } finally {
+      if (saveButton instanceof HTMLButtonElement) {
+        saveButton.disabled = false;
+      }
+    }
+  });
+}
+
+function mountBookingEditModalToBody() {
+  const modalInDom = document.getElementById("editBookingModal");
+
+  if (!modalInDom) {
+    return;
+  }
+
+  const existingBodyModal = document.body.querySelector("#editBookingModal");
+
+  if (existingBodyModal && existingBodyModal !== modalInDom) {
+    modalInDom.remove();
+    return;
+  }
+
+  if (modalInDom.parentElement !== document.body) {
+    document.body.appendChild(modalInDom);
+  }
+}
+
+async function loadUserPendingTrips(user, isAdmin) {
+  const wrapper = document.getElementById("myPendingTripsSection");
+  const host = document.getElementById("myPendingTripsHost");
+
+  if (!wrapper || !host) {
+    return;
+  }
+
+  if (!user || isAdmin) {
+    wrapper.classList.add("d-none");
+    return;
+  }
+
+  wrapper.classList.remove("d-none");
+  host.innerHTML = '<div class="text-muted">Loading your pending trips...</div>';
+
+  try {
+    const trips = await getAllTrips({}, { includeAll: true });
+    const pendingTrips = trips.filter((trip) => trip.driver_id === user.id && trip.moderation_status === "pending");
+
+    if (!pendingTrips.length) {
+      wrapper.classList.add("d-none");
+      host.innerHTML = "";
+      return;
+    }
+
+    renderUserPendingTrips(pendingTrips);
+  } catch (error) {
+    showUserPendingTripsError(error.message || "Failed to load pending trips.");
+  }
 }
 
 async function loadAdminPendingTrips(isAdmin) {
@@ -514,6 +796,19 @@ export function HomePage() {
           </div>
         </div>
 
+        <div id="myPendingTripsSection" class="card border-0 shadow-sm mb-4 d-none">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h2 class="h5 mb-0">My Pending Trips</h2>
+              <div class="d-flex align-items-center gap-2">
+                <span class="small text-muted">Waiting for administrator approval</span>
+                <a href="/profile.html#driver-pane" class="btn btn-sm btn-outline-primary">Open My Trips & Requests</a>
+              </div>
+            </div>
+            <div id="myPendingTripsHost"></div>
+          </div>
+        </div>
+
         <div id="adminPendingTripsSection" class="card border-0 shadow-sm mb-4 d-none">
           <div class="card-body">
             <div class="d-flex justify-content-between align-items-center mb-3">
@@ -540,11 +835,66 @@ export function HomePage() {
         <div id="tripsGrid" class="row g-4"></div>
       </section>
     </main>
+
+    <div class="modal fade" id="editBookingModal" tabindex="-1" aria-labelledby="editBookingModalTitle" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered sr-admin-booking-dialog">
+        <div class="modal-content sr-admin-booking-modal">
+          <div class="modal-header">
+            <h2 class="modal-title fs-5" id="editBookingModalTitle">Edit Booking</h2>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <form id="editBookingForm">
+            <div class="modal-body">
+              <input type="hidden" id="editBookingId" name="booking_id" />
+              <input type="hidden" id="editBookingSource" name="source" />
+              <input type="hidden" id="editBookingStatusRaw" name="booking_status" />
+              <div id="bookingEditAlert" class="mb-3"></div>
+              <div class="row g-3">
+                <div class="col-12">
+                  <label for="editBookingRoute" class="form-label">Route</label>
+                  <input id="editBookingRoute" type="text" class="form-control" readonly />
+                </div>
+                <div class="col-12 col-md-6">
+                  <label for="editBookingDateTime" class="form-label">Date & Time</label>
+                  <input id="editBookingDateTime" type="text" class="form-control" readonly />
+                </div>
+                <div class="col-12 col-md-6">
+                  <label for="editBookingDriver" class="form-label">Driver</label>
+                  <input id="editBookingDriver" type="text" class="form-control" readonly />
+                </div>
+                <div class="col-12 col-md-6">
+                  <label for="editBookingSeats" class="form-label">Seats</label>
+                  <input id="editBookingSeats" type="text" class="form-control" readonly />
+                </div>
+                <div class="col-12 col-md-6">
+                  <label for="editBookingStatus" class="form-label">Status</label>
+                  <input id="editBookingStatus" type="text" class="form-control" readonly />
+                </div>
+                <div class="col-12">
+                  <label for="editBookingPhone" class="form-label">Phone</label>
+                  <input id="editBookingPhone" name="passenger_phone" type="text" class="form-control" maxlength="40" required />
+                </div>
+                <div class="col-12">
+                  <label for="editBookingNote" class="form-label">Note</label>
+                  <textarea id="editBookingNote" name="passenger_note" class="form-control" rows="3" maxlength="600"></textarea>
+                </div>
+                <div class="col-12 d-none" id="bookingEditRestrictionMessage"></div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+              <button type="submit" class="btn btn-primary" id="saveBookingChangesButton">Save Changes</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
   `;
 }
 
 export function setupHomePage() {
   void initHeroLottie();
+  mountBookingEditModalToBody();
 
   const searchForm = document.getElementById("tripSearchForm");
   const myBookingsHost = document.getElementById("myBookingsHost");
@@ -552,20 +902,29 @@ export function setupHomePage() {
   const adminPendingBookingsHost = document.getElementById("adminPendingBookingsHost");
   let isAdminViewer = false;
 
+  bindBookingEditForm({ loadUserBookings, loadAdminPendingBookings });
+
   getCurrentUser()
-    .then(({ profile }) => {
+    .then(({ user, profile }) => {
       isAdminViewer = profile?.role === "admin";
       if (isAdminViewer) {
         setAdminNotificationRefreshCallback(async () => {
-          await Promise.all([loadAdminPendingTrips(true), loadAdminPendingBookings(true), loadTrips({}, true)]);
+          await Promise.all([
+            loadAdminPendingTrips(true),
+            loadAdminPendingBookings(true),
+            loadUserPendingTrips(user, true),
+            loadTrips({}, true),
+          ]);
         });
       }
+      loadUserPendingTrips(user, isAdminViewer);
       loadAdminPendingTrips(isAdminViewer);
       loadAdminPendingBookings(isAdminViewer);
       return loadTrips({}, isAdminViewer);
     })
     .catch(() => {
       isAdminViewer = false;
+      loadUserPendingTrips(null, false);
       loadAdminPendingTrips(false);
       loadAdminPendingBookings(false);
       return loadTrips({}, false);
@@ -578,6 +937,20 @@ export function setupHomePage() {
       const target = event.target;
 
       if (!(target instanceof HTMLElement)) {
+        return;
+      }
+
+      const editButton = target.closest("[data-edit-booking-id]");
+
+      if (editButton instanceof HTMLButtonElement) {
+        const bookingId = editButton.getAttribute("data-edit-booking-id");
+
+        if (!bookingId) {
+          return;
+        }
+
+        openBookingEditModal(bookingId, "user");
+
         return;
       }
 
@@ -616,6 +989,20 @@ export function setupHomePage() {
       const target = event.target;
 
       if (!(target instanceof HTMLElement)) {
+        return;
+      }
+
+      const editButton = target.closest("[data-edit-booking-id]");
+
+      if (editButton instanceof HTMLButtonElement) {
+        const bookingId = editButton.getAttribute("data-edit-booking-id");
+
+        if (!bookingId) {
+          return;
+        }
+
+        openBookingEditModal(bookingId, "admin");
+
         return;
       }
 
