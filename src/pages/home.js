@@ -669,9 +669,9 @@ function tripCard(trip) {
           <h3 class="h5 card-title mb-2">${trip.from_city} → ${trip.to_city}</h3>
           <p class="card-text text-muted mb-2">${formatDateTime(trip.date_time)}</p>
           <p class="card-text mb-2"><strong>Цена:</strong> ${Number(trip.price).toFixed(2)} EUR</p>
-          <p class="card-text mb-2"><strong>Available Seats:</strong> ${trip.available_seats}</p>
-          <p class="card-text mb-4"><strong>Driver:</strong> ${driverName}</p>
-          <a class="btn btn-outline-primary mt-auto" href="/trip-details.html?id=${trip.id}">View Details</a>
+          <p class="card-text mb-2"><strong>Налични места:</strong> ${trip.available_seats}</p>
+          <p class="card-text mb-4"><strong>Шофьор:</strong> ${driverName}</p>
+          <a class="btn btn-outline-primary mt-auto" href="/trip-details.html?id=${trip.id}">Виж детайли</a>
         </div>
       </article>
     </div>
@@ -755,13 +755,13 @@ export function HomePage() {
         <div class="hero-content">
           <div class="row g-4 align-items-center">
             <div class="col-12 col-lg-7">
-              <p class="text-uppercase small mb-2" style="letter-spacing: 0.12em;">Smart Mobility Network</p>
-              <h1 class="hero-title mb-3">Travel Smarter Through A Digital Ride Grid</h1>
-              <p class="lead text-muted mb-4">Connect with verified drivers, discover routes in seconds, and experience next-gen city-to-city travel.</p>
+              <p class="text-uppercase small mb-2" style="letter-spacing: 0.12em;">Дигитална мрежа за мобилност</p>
+              <h1 class="hero-title mb-3">Град до град. По-умно, по-бързо, по-лесно.</h1>
+              <p class="lead text-muted mb-4">Открий маршрут за секунди, пътувай с проверени шофьори и стигни навреме без излишен стрес.</p>
 
-              <a href="/create-trip.html" class="cta-travel mb-4">
+              <a href="/trips.html" class="cta-travel mb-4">
                 <i class="bi bi-rocket-takeoff-fill"></i>
-                BOOK A TRAVEL
+                Резервирай пътуване
               </a>
 
               <form id="tripSearchForm" class="row g-3 align-items-end mt-2" novalidate>

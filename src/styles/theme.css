@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Russo+One&family=Space+Grotesk:wght@400;500;600;700&display=swap");
 
 :root {
   --sr-bg: #05060f;
@@ -240,7 +240,7 @@ body {
 }
 
 .hero-title {
-  font-family: "Orbitron", sans-serif;
+  font-family: "Russo One", "Orbitron", sans-serif;
   font-size: clamp(2rem, 5vw, 3.5rem);
   line-height: 1.1;
   letter-spacing: 0.04em;
@@ -250,7 +250,7 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 0.75rem;
-  font-family: "Orbitron", sans-serif;
+  font-family: "Russo One", "Orbitron", sans-serif;
   font-size: clamp(1.2rem, 2.5vw, 1.9rem);
   letter-spacing: 0.1em;
   text-transform: uppercase;

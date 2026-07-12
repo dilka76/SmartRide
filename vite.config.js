@@ -17,6 +17,7 @@ export default defineConfig({
         dashboard: resolve(__dirname, "dashboard.html"),
         createTrip: resolve(__dirname, "create-trip.html"),
         tripDetails: resolve(__dirname, "trip-details.html"),
+        trips: resolve(__dirname, "trips.html"),
       },
     },
   },

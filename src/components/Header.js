@@ -3,6 +3,7 @@ import { getCurrentUser, signOut } from "../services/authService.js";
 function loggedOutLinks() {
   return `
     <li class="nav-item"><a class="nav-link" href="/">Начало</a></li>
+    <li class="nav-item"><a class="nav-link" href="/trips.html">Пътувания</a></li>
     <li class="nav-item"><a class="nav-link" href="/login.html">Вход</a></li>
     <li class="nav-item"><a class="nav-link" href="/register.html">Регистрация</a></li>
   `;
@@ -11,6 +12,7 @@ function loggedOutLinks() {
 function loggedInLinks(isAdmin) {
   return `
     <li class="nav-item"><a class="nav-link" href="/">Начало</a></li>
+    <li class="nav-item"><a class="nav-link" href="/trips.html">Пътувания</a></li>
     <li class="nav-item"><a class="nav-link" href="/create-trip.html">Създай пътуване</a></li>
     <li class="nav-item"><a class="nav-link" href="/profile.html">Профил</a></li>
     <li class="nav-item"><a class="nav-link" href="/dashboard.html">Управление</a></li>

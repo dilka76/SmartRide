@@ -16,6 +16,8 @@ import { ProfilePage } from "./pages/profile.js";
 import { setupProfilePage } from "./pages/profile.js";
 import { TripDetailsPage } from "./pages/tripDetails.js";
 import { setupTripDetailsPage } from "./pages/tripDetails.js";
+import { TripsPage } from "./pages/trips.js";
+import { setupTripsPage } from "./pages/trips.js";
 import { RegisterPage } from "./pages/register.js";
 import { setupRegisterPage } from "./pages/register.js";
 
@@ -55,6 +57,10 @@ function getRoute() {
     return "tripDetails";
   }
 
+  if (pathname === "/trips" || pathname === "/trips.html") {
+    return "trips";
+  }
+
   return "home";
 }
 
@@ -72,6 +78,8 @@ function getPageMarkup(route) {
       return ProfilePage();
     case "tripDetails":
       return TripDetailsPage();
+    case "trips":
+      return TripsPage();
     case "register":
       return RegisterPage();
     case "home":
@@ -102,6 +110,9 @@ function setupPage(route) {
       break;
     case "tripDetails":
       setupTripDetailsPage();
+      break;
+    case "trips":
+      setupTripsPage();
       break;
     case "home":
       setupHomePage();
