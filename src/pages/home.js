@@ -3,6 +3,51 @@ import { deleteBooking, getAllAdminBookings, getAllPendingBookings, getAllTrips,
 import { setAdminNotificationRefreshCallback } from "../services/notificationService.js";
 
 const PLACEHOLDER_IMAGE = "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1200&q=80";
+let heroLottieInstance = null;
+let lottieLoaderPromise = null;
+
+async function initHeroLottie() {
+  const host = document.getElementById("heroLottie");
+
+  if (!host) {
+    return;
+  }
+
+  host.classList.remove("is-loaded");
+
+  if (heroLottieInstance) {
+    heroLottieInstance.destroy();
+    heroLottieInstance = null;
+  }
+
+  try {
+    if (!lottieLoaderPromise) {
+      lottieLoaderPromise = import("lottie-web");
+    }
+
+    const { default: lottie } = await lottieLoaderPromise;
+
+    if (!document.body.contains(host)) {
+      return;
+    }
+
+    heroLottieInstance = lottie.loadAnimation({
+      container: host,
+      renderer: "svg",
+      loop: true,
+      autoplay: true,
+      path: "/lottie/tourists-by-car.json",
+    });
+
+    heroLottieInstance.addEventListener("DOMLoaded", () => {
+      if (document.body.contains(host)) {
+        host.classList.add("is-loaded");
+      }
+    });
+  } catch (error) {
+    console.error("Failed to load hero animation:", error);
+  }
+}
 
 function formatDateTime(value) {
   const date = new Date(value);
@@ -312,28 +357,35 @@ export function HomePage() {
         </div>
 
         <div class="hero-content">
-          <p class="text-uppercase small mb-2" style="letter-spacing: 0.12em;">Smart Mobility Network</p>
-          <h1 class="hero-title mb-3">Travel Smarter Through A Digital Ride Grid</h1>
-          <p class="lead text-muted mb-4">Connect with verified drivers, discover routes in seconds, and experience next-gen city-to-city travel.</p>
+          <div class="row g-4 align-items-center">
+            <div class="col-12 col-lg-7">
+              <p class="text-uppercase small mb-2" style="letter-spacing: 0.12em;">Smart Mobility Network</p>
+              <h1 class="hero-title mb-3">Travel Smarter Through A Digital Ride Grid</h1>
+              <p class="lead text-muted mb-4">Connect with verified drivers, discover routes in seconds, and experience next-gen city-to-city travel.</p>
 
-          <a href="/create-trip.html" class="cta-travel mb-4">
-            <i class="bi bi-rocket-takeoff-fill"></i>
-            BOOK A TRAVEL
-          </a>
+              <a href="/create-trip.html" class="cta-travel mb-4">
+                <i class="bi bi-rocket-takeoff-fill"></i>
+                BOOK A TRAVEL
+              </a>
 
-          <form id="tripSearchForm" class="row g-3 align-items-end mt-2" novalidate>
-            <div class="col-12 col-md-5">
-              <label for="searchFromCity" class="form-label">From City</label>
-              <input id="searchFromCity" name="from_city" type="text" class="form-control" placeholder="Sofia" />
+              <form id="tripSearchForm" class="row g-3 align-items-end mt-2" novalidate>
+                <div class="col-12 col-md-5">
+                  <label for="searchFromCity" class="form-label">From City</label>
+                  <input id="searchFromCity" name="from_city" type="text" class="form-control" placeholder="Sofia" />
+                </div>
+                <div class="col-12 col-md-5">
+                  <label for="searchToCity" class="form-label">To City</label>
+                  <input id="searchToCity" name="to_city" type="text" class="form-control" placeholder="Plovdiv" />
+                </div>
+                <div class="col-12 col-md-2 d-grid">
+                  <button type="submit" class="btn btn-primary">Search</button>
+                </div>
+              </form>
             </div>
-            <div class="col-12 col-md-5">
-              <label for="searchToCity" class="form-label">To City</label>
-              <input id="searchToCity" name="to_city" type="text" class="form-control" placeholder="Plovdiv" />
+            <div class="col-12 col-lg-5">
+              <div id="heroLottie" class="hero-lottie" aria-hidden="true"></div>
             </div>
-            <div class="col-12 col-md-2 d-grid">
-              <button type="submit" class="btn btn-primary">Search</button>
-            </div>
-          </form>
+          </div>
         </div>
       </section>
 
@@ -368,6 +420,8 @@ export function HomePage() {
 }
 
 export function setupHomePage() {
+  void initHeroLottie();
+
   const searchForm = document.getElementById("tripSearchForm");
   const myBookingsHost = document.getElementById("myBookingsHost");
   const adminPendingBookingsHost = document.getElementById("adminPendingBookingsHost");
