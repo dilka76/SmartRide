@@ -116,7 +116,7 @@ export async function setupCreateTripPage() {
         car_photo_url: carPhotoUrl,
       });
 
-      showCreateTripAlert("Trip created successfully. Redirecting...", "success");
+      showCreateTripAlert("Trip created and sent for admin approval. Redirecting...", "success");
       window.location.href = "/";
     } catch (error) {
       showCreateTripAlert(error.message || "Unable to create trip. Please try again.");

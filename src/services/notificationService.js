@@ -1,5 +1,12 @@
 import { getCurrentUser } from "./authService.js";
-import { getAllPendingBookings, getUserBookings, updateBookingStatus } from "./tripService.js";
+import {
+  adminModerateTrip,
+  getAllPendingBookings,
+  getAllPendingTrips,
+  getDriverTrips,
+  getUserBookings,
+  updateBookingStatus,
+} from "./tripService.js";
 
 const POLL_INTERVAL_MS = 30000;
 let notificationTimerId = null;
@@ -11,6 +18,14 @@ function storageKeyForUser(userId) {
 
 function adminStorageKeyForUser(userId) {
   return `smartride_admin_pending_snapshot_${userId}`;
+}
+
+function adminPendingTripsStorageKeyForUser(userId) {
+  return `smartride_admin_pending_trips_snapshot_${userId}`;
+}
+
+function tripModerationSnapshotKeyForUser(userId) {
+  return `smartride_trip_moderation_snapshot_${userId}`;
 }
 
 function getStatusSnapshot(userId) {
@@ -43,6 +58,38 @@ function getAdminPendingSnapshot(userId) {
 function saveAdminPendingSnapshot(userId, bookingIds) {
   const key = adminStorageKeyForUser(userId);
   localStorage.setItem(key, JSON.stringify(bookingIds));
+}
+
+function getAdminPendingTripsSnapshot(userId) {
+  const key = adminPendingTripsStorageKeyForUser(userId);
+
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveAdminPendingTripsSnapshot(userId, tripIds) {
+  const key = adminPendingTripsStorageKeyForUser(userId);
+  localStorage.setItem(key, JSON.stringify(tripIds));
+}
+
+function getTripModerationSnapshot(userId) {
+  const key = tripModerationSnapshotKeyForUser(userId);
+
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveTripModerationSnapshot(userId, snapshot) {
+  const key = tripModerationSnapshotKeyForUser(userId);
+  localStorage.setItem(key, JSON.stringify(snapshot));
 }
 
 function ensureToastContainer() {
@@ -222,6 +269,133 @@ function showAdminNewBookingModal(bookings) {
   modal.show();
 }
 
+function ensureAdminTripModal() {
+  let modalElement = document.getElementById("adminNewTripModal");
+
+  if (!modalElement) {
+    const wrapper = document.createElement("div");
+    wrapper.innerHTML = `
+      <div class="modal fade" id="adminNewTripModal" tabindex="-1" aria-labelledby="adminNewTripModalTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg sr-admin-booking-dialog">
+          <div class="modal-content sr-admin-booking-modal">
+            <div class="modal-header border-0 pb-0">
+              <h2 class="modal-title fs-5" id="adminNewTripModalTitle">New Trip Approval Needed</h2>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body pt-3" id="adminNewTripModalBody"></div>
+            <div class="modal-footer border-0 pt-0">
+              <button type="button" class="btn btn-outline-danger d-none" id="adminTripModalRejectButton">Reject</button>
+              <button type="button" class="btn btn-success d-none" id="adminTripModalApproveButton">Approve</button>
+              <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Review Later</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const element = wrapper.firstElementChild;
+
+    if (element) {
+      document.body.appendChild(element);
+    }
+
+    modalElement = document.getElementById("adminNewTripModal");
+  }
+
+  return modalElement;
+}
+
+function showAdminNewTripModal(trips) {
+  if (!trips.length) {
+    return;
+  }
+
+  const modalElement = ensureAdminTripModal();
+  const body = document.getElementById("adminNewTripModalBody");
+  const approveButton = document.getElementById("adminTripModalApproveButton");
+  const rejectButton = document.getElementById("adminTripModalRejectButton");
+
+  if (!modalElement || !body || !approveButton || !rejectButton) {
+    return;
+  }
+
+  const primaryTrip = trips[0];
+
+  body.innerHTML = trips
+    .map((trip) => {
+      const driver = trip.driver?.full_name || "Unknown driver";
+      const route = `${trip.from_city || "Unknown"} -> ${trip.to_city || "Unknown"}`;
+      return `
+        <div class="sr-admin-booking-item ${trip === trips[trips.length - 1] ? "" : "mb-3"}">
+          <div class="d-flex justify-content-between align-items-start gap-3">
+            <div>
+              <div class="fw-semibold">${route}</div>
+              <div class="text-muted small">Driver: ${driver}</div>
+            </div>
+            <span class="badge rounded-pill bg-warning text-dark">Pending</span>
+          </div>
+          <div class="small text-muted mt-2">Seats: ${trip.available_seats || 0} | Price: ${Number(trip.price || 0).toFixed(2)} EUR</div>
+        </div>
+      `;
+    })
+    .join("");
+
+  approveButton.classList.remove("d-none");
+  rejectButton.classList.remove("d-none");
+  approveButton.disabled = false;
+  rejectButton.disabled = false;
+
+  approveButton.onclick = async () => {
+    if (!primaryTrip) {
+      return;
+    }
+
+    approveButton.disabled = true;
+    rejectButton.disabled = true;
+
+    try {
+      await adminModerateTrip(primaryTrip.id, "approved");
+      if (typeof adminRefreshCallback === "function") {
+        await adminRefreshCallback();
+      }
+      const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+      modal.hide();
+    } catch {
+      approveButton.disabled = false;
+      rejectButton.disabled = false;
+    }
+  };
+
+  rejectButton.onclick = async () => {
+    if (!primaryTrip) {
+      return;
+    }
+
+    approveButton.disabled = true;
+    rejectButton.disabled = true;
+
+    try {
+      await adminModerateTrip(primaryTrip.id, "rejected");
+      if (typeof adminRefreshCallback === "function") {
+        await adminRefreshCallback();
+      }
+      const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+      modal.hide();
+    } catch {
+      approveButton.disabled = false;
+      rejectButton.disabled = false;
+    }
+  };
+
+  if (typeof bootstrap === "undefined" || !bootstrap.Modal) {
+    window.alert("New trip approval request received.");
+    return;
+  }
+
+  const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+  modal.show();
+}
+
 function buildNotificationMessage(booking) {
   const route = `${booking.trip?.from_city || "Unknown"} -> ${booking.trip?.to_city || "Unknown"}`;
 
@@ -252,11 +426,22 @@ async function checkBookingNotifications() {
     const previousPendingSet = new Set(previousPendingIds);
     const newPendingBookings = pendingBookings.filter((booking) => !previousPendingSet.has(booking.id));
 
+    const pendingTrips = await getAllPendingTrips();
+    const previousPendingTripIds = getAdminPendingTripsSnapshot(user.id);
+    const nextPendingTripIds = pendingTrips.map((trip) => trip.id);
+    const previousPendingTripSet = new Set(previousPendingTripIds);
+    const newPendingTrips = pendingTrips.filter((trip) => !previousPendingTripSet.has(trip.id));
+
     if (previousPendingIds.length > 0 && newPendingBookings.length > 0) {
       showAdminNewBookingModal(newPendingBookings);
     }
 
+    if (previousPendingTripIds.length > 0 && newPendingTrips.length > 0) {
+      showAdminNewTripModal(newPendingTrips);
+    }
+
     saveAdminPendingSnapshot(user.id, nextPendingIds);
+    saveAdminPendingTripsSnapshot(user.id, nextPendingTripIds);
     return;
   }
 
@@ -283,6 +468,30 @@ async function checkBookingNotifications() {
   }
 
   saveStatusSnapshot(user.id, nextSnapshot);
+
+  const trips = await getDriverTrips(user.id);
+  const previousTripSnapshot = getTripModerationSnapshot(user.id);
+  const nextTripSnapshot = {};
+
+  for (const trip of trips) {
+    const previousStatus = previousTripSnapshot[trip.id];
+    const nextStatus = trip.moderation_status;
+
+    nextTripSnapshot[trip.id] = nextStatus;
+
+    if (nextStatus !== "approved" && nextStatus !== "rejected") {
+      continue;
+    }
+
+    if (!previousStatus || previousStatus === nextStatus) {
+      continue;
+    }
+
+    const message = buildTripModerationNotificationMessage(trip);
+    showBookingStatusToast(message.text, message.approved);
+  }
+
+  saveTripModerationSnapshot(user.id, nextTripSnapshot);
 }
 
 export function startBookingNotifications() {
@@ -303,4 +512,20 @@ export function startBookingNotifications() {
 
 export function setAdminNotificationRefreshCallback(callback) {
   adminRefreshCallback = callback;
+}
+
+function buildTripModerationNotificationMessage(trip) {
+  const route = `${trip.from_city || "Unknown"} -> ${trip.to_city || "Unknown"}`;
+
+  if (trip.moderation_status === "approved") {
+    return {
+      text: `Your trip ${route} was approved by administrator.`,
+      approved: true,
+    };
+  }
+
+  return {
+    text: `Your trip ${route} was rejected by administrator.`,
+    approved: false,
+  };
 }

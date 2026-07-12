@@ -58,6 +58,7 @@ export async function createTrip(tripData) {
     price: Number(tripData.price),
     available_seats: Number(tripData.available_seats),
     car_photo_url: tripData.car_photo_url || null,
+    moderation_status: "pending",
   };
 
   const { data, error } = await supabase.from("trips").insert(payload).select().single();
@@ -75,12 +76,12 @@ export async function getAllTrips(filters = {}, options = {}) {
   let query = supabase
     .from("trips")
     .select(
-      "id, from_city, to_city, date_time, price, available_seats, car_photo_url, driver:profiles!trips_driver_id_fkey(full_name)"
+      "id, from_city, to_city, date_time, price, available_seats, moderation_status, car_photo_url, driver:profiles!trips_driver_id_fkey(full_name)"
     )
     .order("date_time", { ascending: true });
 
   if (!includeAll) {
-    query = query.gt("available_seats", 0).gte("date_time", new Date().toISOString());
+    query = query.eq("moderation_status", "approved").gt("available_seats", 0).gte("date_time", new Date().toISOString());
   }
 
   if (filters.from_city) {
@@ -100,6 +101,22 @@ export async function getAllTrips(filters = {}, options = {}) {
   return data || [];
 }
 
+export async function getAllPendingTrips() {
+  const { data, error } = await supabase
+    .from("trips")
+    .select(
+      "id, from_city, to_city, date_time, price, available_seats, moderation_status, driver_id, driver:profiles!trips_driver_id_fkey(full_name, phone)"
+    )
+    .eq("moderation_status", "pending")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    throw error;
+  }
+
+  return data || [];
+}
+
 export async function getTripById(tripId) {
   if (!tripId) {
     throw new Error("Trip ID is required.");
@@ -108,7 +125,7 @@ export async function getTripById(tripId) {
   const { data, error } = await supabase
     .from("trips")
     .select(
-      "id, driver_id, from_city, to_city, date_time, price, available_seats, car_photo_url, driver:profiles!trips_driver_id_fkey(full_name, phone, avatar_url)"
+      "id, driver_id, from_city, to_city, date_time, price, available_seats, moderation_status, car_photo_url, driver:profiles!trips_driver_id_fkey(full_name, phone, avatar_url)"
     )
     .eq("id", tripId)
     .single();
@@ -224,8 +241,26 @@ export async function getDriverTripsWithBookings(driverId) {
   const { data, error } = await supabase
     .from("trips")
     .select(
-      "id, driver_id, from_city, to_city, date_time, available_seats, price, bookings:bookings!bookings_trip_id_fkey(id, trip_id, passenger_id, status, seats_requested, created_at, passenger:profiles!bookings_passenger_id_fkey(full_name, phone))"
+      "id, driver_id, from_city, to_city, date_time, available_seats, price, moderation_status, bookings:bookings!bookings_trip_id_fkey(id, trip_id, passenger_id, status, seats_requested, created_at, passenger:profiles!bookings_passenger_id_fkey(full_name, phone))"
     )
+    .eq("driver_id", driverId)
+    .order("date_time", { ascending: true });
+
+  if (error) {
+    throw error;
+  }
+
+  return data || [];
+}
+
+export async function getDriverTrips(driverId) {
+  if (!driverId) {
+    throw new Error("Driver ID is required.");
+  }
+
+  const { data, error } = await supabase
+    .from("trips")
+    .select("id, driver_id, from_city, to_city, date_time, moderation_status")
     .eq("driver_id", driverId)
     .order("date_time", { ascending: true });
 
@@ -346,6 +381,22 @@ export async function adminUpdateTrip(tripId, updates) {
   }
 
   const { error } = await supabase.from("trips").update(payload).eq("id", tripId);
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function adminModerateTrip(tripId, status) {
+  if (!tripId) {
+    throw new Error("Trip ID is required.");
+  }
+
+  if (status !== "approved" && status !== "rejected") {
+    throw new Error("Invalid trip moderation status.");
+  }
+
+  const { error } = await supabase.from("trips").update({ moderation_status: status }).eq("id", tripId);
 
   if (error) {
     throw error;

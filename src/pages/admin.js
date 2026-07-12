@@ -1,6 +1,7 @@
 import { getCurrentUser } from "../services/authService.js";
 import {
   adminDeleteTrip,
+  adminModerateTrip,
   adminUpdateTrip,
   getAllProfiles,
   getAllTrips,
@@ -53,6 +54,18 @@ function roleBadge(role) {
   }
 
   return '<span class="badge bg-secondary">user</span>';
+}
+
+function tripModerationBadge(status) {
+  if (status === "approved") {
+    return '<span class="badge bg-success">approved</span>';
+  }
+
+  if (status === "rejected") {
+    return '<span class="badge bg-danger">rejected</span>';
+  }
+
+  return '<span class="badge bg-warning text-dark">pending</span>';
 }
 
 function showAccessDenied(message) {
@@ -196,8 +209,20 @@ function renderTripsTable(trips) {
           <td>${formatDateTime(trip.date_time)}</td>
           <td>${Number(trip.price).toFixed(2)} EUR</td>
           <td>${trip.available_seats}</td>
+          <td>${tripModerationBadge(trip.moderation_status)}</td>
           <td>${escapeHtml(trip.driver?.full_name || "Unknown")}</td>
           <td>
+            <div class="d-flex flex-wrap gap-2">
+              <button class="btn btn-sm btn-outline-success" type="button" data-moderate-trip-id="${trip.id}" data-moderation-status="approved" ${
+                trip.moderation_status === "approved" ? "disabled" : ""
+              }>
+                Approve
+              </button>
+              <button class="btn btn-sm btn-outline-warning" type="button" data-moderate-trip-id="${trip.id}" data-moderation-status="rejected" ${
+                trip.moderation_status === "rejected" ? "disabled" : ""
+              }>
+                Reject
+              </button>
             <button class="btn btn-sm btn-outline-primary me-2" type="button" data-edit-trip-id="${trip.id}">
               <i class="bi bi-pencil-square"></i>
               Edit
@@ -209,6 +234,7 @@ function renderTripsTable(trips) {
               </svg>
               Delete Trip
             </button>
+            </div>
           </td>
         </tr>
       `
@@ -224,6 +250,7 @@ function renderTripsTable(trips) {
             <th>Date & Time</th>
             <th>Price</th>
             <th>Seats</th>
+            <th>Status</th>
             <th>Driver</th>
             <th>Actions</th>
           </tr>
@@ -415,6 +442,30 @@ function bindAdminEvents() {
     }
 
     const editButton = target.closest("[data-edit-trip-id]");
+
+    const moderateButton = target.closest("[data-moderate-trip-id]");
+
+    if (moderateButton instanceof HTMLButtonElement) {
+      const tripId = moderateButton.getAttribute("data-moderate-trip-id");
+      const status = moderateButton.getAttribute("data-moderation-status");
+
+      if (!tripId || (status !== "approved" && status !== "rejected")) {
+        return;
+      }
+
+      moderateButton.disabled = true;
+
+      try {
+        await adminModerateTrip(tripId, status);
+        await loadAdminData();
+        showToast(`Trip marked as ${status}.`, "success");
+      } catch (error) {
+        showToast(error.message || "Failed to moderate trip.", "danger");
+        moderateButton.disabled = false;
+      }
+
+      return;
+    }
 
     if (editButton instanceof HTMLButtonElement) {
       const tripId = editButton.getAttribute("data-edit-trip-id");

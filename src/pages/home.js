@@ -1,5 +1,13 @@
 import { getCurrentUser } from "../services/authService.js";
-import { deleteBooking, getAllAdminBookings, getAllPendingBookings, getAllTrips, getUserBookings, updateBookingStatus } from "../services/tripService.js";
+import {
+  adminModerateTrip,
+  deleteBooking,
+  getAllAdminBookings,
+  getAllPendingTrips,
+  getAllTrips,
+  getUserBookings,
+  updateBookingStatus,
+} from "../services/tripService.js";
 import { setAdminNotificationRefreshCallback } from "../services/notificationService.js";
 
 const PLACEHOLDER_IMAGE = "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1200&q=80";
@@ -63,6 +71,18 @@ function formatDateTime(value) {
 }
 
 function bookingStatusBadge(status) {
+  if (status === "approved") {
+    return '<span class="badge bg-success">Approved</span>';
+  }
+
+  if (status === "rejected") {
+    return '<span class="badge bg-danger">Rejected</span>';
+  }
+
+  return '<span class="badge bg-warning text-dark">Pending</span>';
+}
+
+function tripModerationBadge(status) {
   if (status === "approved") {
     return '<span class="badge bg-success">Approved</span>';
   }
@@ -211,6 +231,93 @@ function showAdminPendingBookingsError(message) {
   host.innerHTML = `<div class="alert alert-danger mb-0">${message}</div>`;
 }
 
+function renderAdminPendingTrips(trips) {
+  const host = document.getElementById("adminPendingTripsHost");
+
+  if (!host) {
+    return;
+  }
+
+  if (!trips.length) {
+    host.innerHTML = '<div class="alert alert-secondary mb-0">No trips waiting for moderation.</div>';
+    return;
+  }
+
+  const rows = trips
+    .map(
+      (trip) => `
+        <tr>
+          <td>${trip.from_city} → ${trip.to_city}</td>
+          <td>${formatDateTime(trip.date_time)}</td>
+          <td>${trip.driver?.full_name || "Unknown"}</td>
+          <td>${Number(trip.price).toFixed(2)} EUR</td>
+          <td>${trip.available_seats}</td>
+          <td>${tripModerationBadge(trip.moderation_status)}</td>
+          <td>
+            <div class="d-flex gap-2">
+              <button class="btn btn-sm btn-success" type="button" data-admin-trip-action="approved" data-trip-id="${trip.id}">Approve</button>
+              <button class="btn btn-sm btn-danger" type="button" data-admin-trip-action="rejected" data-trip-id="${trip.id}">Reject</button>
+            </div>
+          </td>
+        </tr>
+      `
+    )
+    .join("");
+
+  host.innerHTML = `
+    <div class="table-responsive">
+      <table class="table align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Route</th>
+            <th>Date & Time</th>
+            <th>Driver</th>
+            <th>Price</th>
+            <th>Seats</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+function showAdminPendingTripsError(message) {
+  const host = document.getElementById("adminPendingTripsHost");
+
+  if (!host) {
+    return;
+  }
+
+  host.innerHTML = `<div class="alert alert-danger mb-0">${message}</div>`;
+}
+
+async function loadAdminPendingTrips(isAdmin) {
+  const wrapper = document.getElementById("adminPendingTripsSection");
+  const host = document.getElementById("adminPendingTripsHost");
+
+  if (!wrapper || !host) {
+    return;
+  }
+
+  if (!isAdmin) {
+    wrapper.classList.add("d-none");
+    return;
+  }
+
+  wrapper.classList.remove("d-none");
+  host.innerHTML = '<div class="text-muted">Loading pending trips...</div>';
+
+  try {
+    const trips = await getAllPendingTrips();
+    renderAdminPendingTrips(trips);
+  } catch (error) {
+    showAdminPendingTripsError(error.message || "Failed to load pending trips.");
+  }
+}
+
 async function loadAdminPendingBookings(isAdmin) {
   const wrapper = document.getElementById("adminPendingBookingsSection");
   const host = document.getElementById("adminPendingBookingsHost");
@@ -256,6 +363,13 @@ async function loadUserBookings() {
 
     const bookings = await getUserBookings(user.id);
     const activeBookings = bookings.filter((booking) => booking.status === "approved" || booking.status === "pending");
+
+    if (!activeBookings.length) {
+      wrapper.classList.add("d-none");
+      host.innerHTML = "";
+      return;
+    }
+
     renderUserBookings(activeBookings);
   } catch (error) {
     showBookingsError(error.message || "Failed to load your bookings.");
@@ -400,6 +514,16 @@ export function HomePage() {
           </div>
         </div>
 
+        <div id="adminPendingTripsSection" class="card border-0 shadow-sm mb-4 d-none">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h2 class="h5 mb-0">Pending Trip Approvals</h2>
+              <span class="small text-muted">Admin moderation queue for newly created trips</span>
+            </div>
+            <div id="adminPendingTripsHost"></div>
+          </div>
+        </div>
+
         <div id="adminPendingBookingsSection" class="card border-0 shadow-sm mb-4 d-none">
           <div class="card-body">
             <div class="d-flex justify-content-between align-items-center mb-3">
@@ -424,6 +548,7 @@ export function setupHomePage() {
 
   const searchForm = document.getElementById("tripSearchForm");
   const myBookingsHost = document.getElementById("myBookingsHost");
+  const adminPendingTripsHost = document.getElementById("adminPendingTripsHost");
   const adminPendingBookingsHost = document.getElementById("adminPendingBookingsHost");
   let isAdminViewer = false;
 
@@ -432,14 +557,16 @@ export function setupHomePage() {
       isAdminViewer = profile?.role === "admin";
       if (isAdminViewer) {
         setAdminNotificationRefreshCallback(async () => {
-          await Promise.all([loadAdminPendingBookings(true), loadTrips({}, true)]);
+          await Promise.all([loadAdminPendingTrips(true), loadAdminPendingBookings(true), loadTrips({}, true)]);
         });
       }
+      loadAdminPendingTrips(isAdminViewer);
       loadAdminPendingBookings(isAdminViewer);
       return loadTrips({}, isAdminViewer);
     })
     .catch(() => {
       isAdminViewer = false;
+      loadAdminPendingTrips(false);
       loadAdminPendingBookings(false);
       return loadTrips({}, false);
     });
@@ -513,6 +640,39 @@ export function setupHomePage() {
         await Promise.all([loadAdminPendingBookings(true), loadTrips({}, true)]);
       } catch (error) {
         showAdminPendingBookingsError(error.message || "Failed to update booking request.");
+        button.disabled = false;
+      }
+    });
+  }
+
+  if (adminPendingTripsHost) {
+    adminPendingTripsHost.addEventListener("click", async (event) => {
+      const target = event.target;
+
+      if (!(target instanceof HTMLElement)) {
+        return;
+      }
+
+      const button = target.closest("[data-admin-trip-action]");
+
+      if (!(button instanceof HTMLButtonElement)) {
+        return;
+      }
+
+      const action = button.getAttribute("data-admin-trip-action");
+      const tripId = button.getAttribute("data-trip-id");
+
+      if (!tripId || (action !== "approved" && action !== "rejected")) {
+        return;
+      }
+
+      button.disabled = true;
+
+      try {
+        await adminModerateTrip(tripId, action);
+        await Promise.all([loadAdminPendingTrips(true), loadTrips({}, true)]);
+      } catch (error) {
+        showAdminPendingTripsError(error.message || "Failed to update trip moderation status.");
         button.disabled = false;
       }
     });
