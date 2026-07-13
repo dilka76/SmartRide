@@ -16,7 +16,6 @@ async function syncProfile(user, fullName, phone) {
     id: user.id,
     full_name: fallbackName,
     phone: phone ?? user.user_metadata?.phone ?? null,
-    role: "user",
   });
 
   if (error) {
