@@ -653,7 +653,8 @@ ${_}`}class C extends Error{constructor({message:e,code:r,cause:s,name:n}){var i
 
             <hr class="my-4" />
 
-            <h2 class="h5 mb-3">Качване на снимка на автомобил</h2>
+            <h2 class="h5 mb-2">Качване на снимка на автомобил</h2>
+            <p class="text-muted mb-3">Моля качете снимка на Вашия автомобил.</p>
             <div id="dashboardAlert"></div>
             <form id="carPhotoUploadForm" novalidate>
               <div class="mb-3">
